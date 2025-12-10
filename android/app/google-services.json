@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "999583790732",
+    "project_id": "thehomekeeper-175e2",
+    "storage_bucket": "thehomekeeper-175e2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:999583790732:android:f89eb18bcc5ac12aa06da9",
+        "android_client_info": {
+          "package_name": "com.thehomekeeper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO_VRMalYbCoAJgEZRWXBci8VhvDuMeGk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

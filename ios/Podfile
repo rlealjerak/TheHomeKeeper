@@ -16,6 +16,9 @@ end
 
 target 'TheHomeKeeper' do
   config = use_native_modules!
+  # Ensure that the React Native dependencies are linked correctly
+use_frameworks! :linkage => :static
+$RNFirebaseAsStaticFramework = true 
 
   use_react_native!(
     :path => config[:reactNativePath],
