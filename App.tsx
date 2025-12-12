@@ -2,6 +2,7 @@ import SignUp from './src/screens/SignUp';
 import React from 'react';
 import addItem from './src/services/addItems';
 import getItems from './src/services/getItems';
+import updateItems from './src/services/updateItems';
 /*import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 

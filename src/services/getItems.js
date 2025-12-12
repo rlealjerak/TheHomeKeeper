@@ -1,16 +1,17 @@
-import { getFirestore, collection, getDocs} from 'firebase/firestore';
-import { getApp } from 'firebase/app'; 
-
-const db = getFirestore(getApp());
+import firestore from '@react-native-firebase/firestore';
 
 async function getItems(uid) {
-    try {
-        const q = query(  collection(db, 'items'), where('uid', '==', uid));
-        const querySnapshot = await getDocs(q);
+    try { 
+        const querySnapshot = await firestore()
+        .collection('items')
+        .where('uid' , '==', uid)
+        .get();
+
         const items = [];
         querySnapshot.forEach((doc) => {
             items.push({ id: doc.id, ...doc.data() });
         });
+
         return items;
     } catch (e) {
         console.error('Error getting items: ', e);

@@ -1,11 +1,12 @@
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { getApp } from 'firebase/app';
-
-const db = getFirestore(getApp());
+import firestore from '@react-native-firebase/firestore';
 
 async function addItem(uid, name, notes, maintenanceDate, frequency) {
     try { 
-        const docRef = await addDoc(collection(db, 'items'), {
+        const docRef = await firestore()
+            .collection('users')
+            .doc(uid)
+            .collection('items')
+            .add({
             name,
             notes,
             maintenanceDate,

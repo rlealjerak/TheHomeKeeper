@@ -1,4 +1,5 @@
-import { getAuth, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 
@@ -10,23 +11,34 @@ const SignUpScreen = () => {
   const [username, setUsername] = useState('');
   
 
-  const handleSignUp = () => {
-    createUserWithEmailAndPassword(getAuth(), name, lastName, username, email, password)
-  .then(() => {
-    console.log('User account created & signed in!');
-  })
-  .catch(error => {
-    if (error.code === 'auth/email-already-in-use') {
-      console.log('That email address is already in use!');
-    }
+// Function to handle sign up with email and password 
+  const handleSignUp = async () => {
+    try{ 
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      const uid = userCredential.user.uid; 
 
-    if (error.code === 'auth/invalid-email') {
-      console.log('That email address is invalid!');
-    }
+// Store extra information like name, last name, and username in your database here
+  await firestore().collection('users').doc(uid).set({
+    name,
+    lastName,
+    username,
+    createdAt: new Date()
+});   
+      console.log('User signed up successfully:', uid);
 
-    console.error(error);
-  });
-  };
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        console.log('That email address is already in use!');
+      }
+
+      if (error.code === 'auth/invalid-email') {
+        console.log('That email address is invalid!');
+      } else{
+        console.error('Error signing up:', error);
+      }
+    }
+  };  
+
 
   return (
     <View style={styles.container}>
@@ -86,7 +98,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
     paddingHorizontal: 8,
-  },
-});
-
-export default SignUpScreen;      
+    },
+  });
+export default SignUpScreen;
