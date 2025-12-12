@@ -5,9 +5,13 @@ import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  
 
   const handleSignUp = () => {
-    createUserWithEmailAndPassword(getAuth(), email, password)
+    createUserWithEmailAndPassword(getAuth(), name, lastName, username, email, password)
   .then(() => {
     console.log('User account created & signed in!');
   })
@@ -27,6 +31,24 @@ const SignUpScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
+      <TextInput 
+        style={styles.input}
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+      />
+      <TextInput 
+        style={styles.input}
+        placeholder="Last Name"
+        value={lastName}
+        onChangeText={setLastName}
+      />
+      <TextInput 
+        style={styles.input}
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+      />
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -67,4 +89,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignUpScreen;    
+export default SignUpScreen;      

@@ -1,5 +1,7 @@
-import SignUpScreen from './src/screens/SignUpScreen';
+import SignUp from './src/screens/SignUp';
 import React from 'react';
+import addItem from './src/services/addItems';
+import getItems from './src/services/getItems';
 /*import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -18,7 +20,7 @@ const App = () => {
 export default App; */
 
 export default function App() {
-  return <SignUpScreen />;
+  return <SignUp />;
 }
 
 
