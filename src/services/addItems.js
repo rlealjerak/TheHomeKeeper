@@ -1,21 +1,37 @@
 import firestore from '@react-native-firebase/firestore';
 
-async function addItem(uid, name, notes, maintenanceDate, frequency) {
-    try { 
-        const docRef = await firestore()
-            .collection('users')
-            .doc(uid)
-            .collection('items')
-            .add({
-            name,
-            notes,
-            maintenanceDate,
-            frequency,
-            uid,
-        });
-        console.log('Document written with ID: ', docRef.id);
-    } catch (e) {
-        console.error('Error adding item: ', e);
+async function addItem(
+  uid,
+  name,
+  notes,
+  lastMaintenanceDate,
+  frequency
+) {
+  try {
+    let firestoreLastMaintenanceDate = null;
+
+    if (lastMaintenanceDate) {
+      firestoreLastMaintenanceDate =
+        firestore.Timestamp.fromDate(lastMaintenanceDate);
     }
-} 
+
+    await firestore()
+      .collection('users')
+      .doc(uid)
+      .collection('items')
+      .add({
+        uid,
+        name,
+        notes: notes || '',
+        lastMaintenanceDate: firestoreLastMaintenanceDate,
+        frequency: Number(frequency),
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
+
+  } catch (e) {
+    console.error('Error adding item:', e.code, e.message);
+    throw e;
+  }
+}
+
 export default addItem;

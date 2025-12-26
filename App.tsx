@@ -1,27 +1,10 @@
 import SignUp from './src/screens/SignUp';
+import SignIn from './src/screens/SignIn';
 import React from 'react';
-import addItem from './src/services/addItems';
-import getItems from './src/services/getItems';
-import updateItems from './src/services/updateItems';
-/*import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-const Stack = createNativeStackNavigator();
-
-const App = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="SignUp">
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
-
-export default App; */
+import ItemManagementScreen from './src/screens/ItemManagement';
 
 export default function App() {
-  return <SignUp />;
+  return <ItemManagementScreen />;
 }
 
 
