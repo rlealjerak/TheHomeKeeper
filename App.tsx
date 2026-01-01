@@ -1,10 +1,8 @@
-import SignUp from './src/screens/SignUp';
-import SignIn from './src/screens/SignIn';
 import React from 'react';
-import ItemManagementScreen from './src/screens/ItemManagement';
+import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
-  return <ItemManagementScreen />;
+  return <RootNavigator />;
 }
 
 

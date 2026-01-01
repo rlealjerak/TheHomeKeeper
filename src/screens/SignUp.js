@@ -1,7 +1,8 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet } from 'react-native'; 
+import { Link } from '@react-navigation/native';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
@@ -77,6 +78,10 @@ const SignUpScreen = () => {
         secureTextEntry
       />
       <Button title="Sign Up" onPress={handleSignUp} />
+      <Text style={{ textAlign: 'center', marginVertical: 8 }}>
+  Already have an account? <Link screen="SignIn" style={{ color: 'blue', fontWeight: 'bold' }}>Sign In</Link>
+</Text>
+
     </View> 
   );
 };
