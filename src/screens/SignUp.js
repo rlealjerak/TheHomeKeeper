@@ -3,6 +3,7 @@ import firestore from '@react-native-firebase/firestore';
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native'; 
 import { Link } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
@@ -42,7 +43,7 @@ const SignUpScreen = () => {
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
       <TextInput 
         style={styles.input}
@@ -82,7 +83,7 @@ const SignUpScreen = () => {
   Already have an account? <Link screen="SignIn" style={{ color: 'blue', fontWeight: 'bold' }}>Sign In</Link>
 </Text>
 
-    </View> 
+    </SafeAreaView> 
   );
 };
 

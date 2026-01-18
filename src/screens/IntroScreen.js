@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Link } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function IntroScreen({ navigation }) {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Welcome to The HomeKeeper 👋</Text>
 
       <Text style={styles.subtitle}>
@@ -18,7 +18,7 @@ export default function IntroScreen({ navigation }) {
       >
         <Text style={styles.buttonText}>Add Your First Item</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

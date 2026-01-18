@@ -1,37 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import auth from '@react-native-firebase/auth';
-import getItems from '../services/getItems';
+import firestore from '@react-native-firebase/firestore';
 import deleteItems from '../services/deleteItems';
 import { useNavigation } from '@react-navigation/native';
 import dayjs from 'dayjs';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DashboardScreen = () => {
+const ItemDashboard = () => {
   const [uid, setUid] = useState(null);
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
+  // Get current user UID
   useEffect(() => {
     const user = auth().currentUser;
     if (user) setUid(user.uid);
   }, []);
 
+  // Real-time listener for user items
   useEffect(() => {
-    if (uid) fetchItems();
+    if (!uid) return;
+
+    const unsubscribe = firestore()
+      .collection('items')
+      .where('uid', '==', uid)
+      .onSnapshot(snapshot => {
+        const userItems = [];
+        snapshot.forEach(doc => userItems.push({ id: doc.id, ...doc.data() }));
+        setItems(userItems); 
+      }, error => {
+        console.error('Error fetching items in real-time:', error);
+      });
+
+    return unsubscribe; 
   }, [uid]);
 
-  const fetchItems = async () => {
-    try {
-      const userItems = await getItems(uid); // fetch only this user's items
-      setItems(userItems);
-    } catch (error) {
-      console.error('Error fetching items:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Delete item
   const handleDeleteItem = (item) => {
     Alert.alert(
       'Delete Item',
@@ -39,16 +44,17 @@ const DashboardScreen = () => {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: async () => {
-            await deleteItems(uid, item.id); // use deleteItems.js
-            fetchItems();
+            await deleteItems(item.id); // delete from firestore
           } 
         },
       ]
     );
   };
 
+  // Edit item
   const handleEditItem = (item) => {
-    navigation.navigate('AddItemScreen', { item }); // pass item to prefill form for updateItems.js
+    navigation.navigate('AddItem', { item }); // pass item to prefill form
+
   };
 
   const nextMaintenanceItem = items.reduce((next, item) => {
@@ -58,10 +64,10 @@ const DashboardScreen = () => {
     return itemDate < nextDate ? item : next;
   }, null);
 
-  if (loading) return <Text>Loading...</Text>;
 
+  // Currently Implementing safe area view for better UI on different devices
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Summary */}
       <View style={styles.summaryCard}>
         <Text style={styles.summaryText}>Total items: {items.length}</Text>
@@ -86,7 +92,6 @@ const DashboardScreen = () => {
                 <Text>Frequency: {item.frequency} days</Text>
                 {item.notes ? <Text>Notes: {item.notes}</Text> : null}
               </View>
-              {/* Three-dot menu */}
               <TouchableOpacity onPress={() => showItemMenu(item)}>
                 <Text style={styles.threeDots}>⋮</Text>
               </TouchableOpacity>
@@ -98,14 +103,15 @@ const DashboardScreen = () => {
       {/* Add Item button */}
       <TouchableOpacity 
         style={styles.addButton} 
-        onPress={() => navigation.navigate('AddItemScreen')}
+        onPress={() => navigation.navigate('AddItem')}
       >
         <Text style={styles.addButtonText}>+ Add Item</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
+  
   );
 
-  // Show menu for Edit/Delete
+  // Menu for Edit/Delete
   function showItemMenu(item) {
     Alert.alert(
       item.name,
@@ -119,38 +125,15 @@ const DashboardScreen = () => {
   }
 };
 
-export default DashboardScreen;
+export default ItemDashboard;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  summaryCard: {
-    padding: 12,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  summaryText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  itemCard: {
-    padding: 12,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  threeDots: {
-    fontSize: 24,
-    paddingHorizontal: 8,
-  },
+  container: { flex: 1, padding: 16 },
+  summaryCard: { padding: 12, backgroundColor: '#4CAF50', borderRadius: 8, marginBottom: 16 },
+  summaryText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  itemCard: { padding: 12, backgroundColor: '#F5F5F5', borderRadius: 8, marginBottom: 12 },
+  itemName: { fontSize: 16, fontWeight: 'bold' },
+  threeDots: { fontSize: 24, paddingHorizontal: 8 },
   addButton: {
     position: 'absolute',
     bottom: 20,
@@ -161,9 +144,5 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 3,
   },
-  addButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  addButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });
