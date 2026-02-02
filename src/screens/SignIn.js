@@ -1,11 +1,11 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore'; // Import firestore
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { Link } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const SignIn = ({ navigation }) => {
+const SignIn = ({ }) => {
   const [identifier, setIdentifier] = useState(''); // This can be email or username
   const [password, setPassword] = useState('');
 

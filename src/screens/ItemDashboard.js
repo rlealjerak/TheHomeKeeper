@@ -27,8 +27,17 @@ const ItemDashboard = () => {
       .where('uid', '==', uid)
       .onSnapshot(snapshot => {
         const userItems = [];
-        snapshot.forEach(doc => userItems.push({ id: doc.id, ...doc.data() }));
-        setItems(userItems); 
+        snapshot.forEach(doc => { 
+          const data = doc.data();
+          const rawDate = data.lastMaintenanceDate;
+          const jsDate = rawDate && rawDate.toDate ? rawDate.toDate() : rawDate;
+          userItems.push({ 
+            id: doc.id, 
+            ...doc.data(), 
+            lastMaintenanceDate: jsDate 
+          });
+          setItems(userItems);
+        });
       }, error => {
         console.error('Error fetching items in real-time:', error);
       });
@@ -36,6 +45,12 @@ const ItemDashboard = () => {
     return unsubscribe; 
   }, [uid]);
 
+  // Calculate the next maintenace date of an item 
+  const nextMaintenanceDate = (item) => {
+    const lastMaintenance = dayjs(item.lastMaintenanceDate);
+    return lastMaintenance.add(item.frequency, 'day');
+  }
+  
   // Delete item
   const handleDeleteItem = (item) => {
     Alert.alert(
@@ -65,7 +80,6 @@ const ItemDashboard = () => {
   }, null);
 
 
-  // Currently Implementing safe area view for better UI on different devices
   return (
     <SafeAreaView style={styles.container}>
       {/* Summary */}
@@ -74,7 +88,7 @@ const ItemDashboard = () => {
         {nextMaintenanceItem && (
           <Text style={styles.summaryText}>
             Next maintenance: {nextMaintenanceItem.name} –{' '}
-            {dayjs(nextMaintenanceItem.lastMaintenanceDate).format('YYYY-MM-DD')}
+            {dayjs(nextMaintenanceDate(nextMaintenanceItem)).format('YYYY-MM-DD')}
           </Text>
         )}
       </View>
