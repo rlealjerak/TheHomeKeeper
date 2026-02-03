@@ -1,18 +1,40 @@
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore'; // Import firestore
+import firestore from '@react-native-firebase/firestore';
 import React, { useState } from 'react';
-import { Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { Link } from '@react-navigation/native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button } from '../components/Button';
+import { TextInput } from '../components/TextInput';
+import { PasswordInput } from '../components/PasswordInput';
+import { Logo } from '../components/Logo';
+import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 
-const SignIn = ({ }) => {
-  const [identifier, setIdentifier] = useState(''); // This can be email or username
+const SignIn = () => {
+  const { colors } = useTheme();
+  const navigation = useNavigation();
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Function to validate if the input looks like an email
+  // Validate if input looks like an email
   const isEmail = (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 
   const handleSignIn = async () => {
+    // Validation
+    if (!identifier.trim()) {
+      Alert.alert('Required Field', 'Please enter your email or username.');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Required Field', 'Please enter your password.');
+      return;
+    }
+
+    if (loading) return;
+    setLoading(true);
+
     try {
       let emailToSignInWith = identifier;
 
@@ -23,24 +45,21 @@ const SignIn = ({ }) => {
 
         if (querySnapshot.empty) {
           Alert.alert('Sign-In Error', 'No user found with that username.');
+          setLoading(false);
           return;
         }
 
-        // Assuming you store the email in the user's document in Firestore
-        // You might need to add email to your user document during sign-up if you haven't
         const userData = querySnapshot.docs[0].data();
         if (!userData.email) {
           Alert.alert('Sign-In Error', 'Email not found for this username. Please sign in with email.');
+          setLoading(false);
           return;
         }
         emailToSignInWith = userData.email;
-        console.log(`Username '${identifier}' mapped to email: ${emailToSignInWith}`);
       }
 
-      const userCredential = await auth().signInWithEmailAndPassword(emailToSignInWith, password);
-      console.log('User signed in successfully:', userCredential.user.uid);
-      // You can navigate to another screen upon successful sign-in
-      // For example: navigation.navigate('HomeScreen');
+      await auth().signInWithEmailAndPassword(emailToSignInWith, password);
+      // Navigation handled by RootNavigator's onAuthStateChanged
     } catch (error) {
       let errorMessage = 'An unexpected error occurred during sign-in.';
       switch (error.code) {
@@ -51,67 +70,157 @@ const SignIn = ({ }) => {
           errorMessage = 'This user account has been disabled.';
           break;
         case 'auth/user-not-found':
-          // This case might still occur if an email was provided but not found
           errorMessage = 'No user found with this email or username.';
           break;
         case 'auth/wrong-password':
           errorMessage = 'Incorrect password.';
           break;
         case 'auth/network-request-failed':
-            errorMessage = 'Network error. Please check your internet connection.';
-            break;
+          errorMessage = 'Network error. Please check your internet connection.';
+          break;
+        case 'auth/invalid-credential':
+          errorMessage = 'Invalid email or password. Please try again.';
+          break;
         default:
           console.error('Error signing in:', error);
           errorMessage = 'Failed to sign in. Please try again.';
           break;
       }
       Alert.alert('Sign-In Error', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Sign In</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email or Username" // Updated placeholder
-        value={identifier}
-        onChangeText={setIdentifier}
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Sign In" onPress={handleSignIn} />
-      <Text style={{ textAlign: 'center', marginVertical: 8 }}>
-        Don't have an account? <Link screen="SignUp" style={{ color: 'blue', fontWeight: 'bold' }}>Sign Up</Link>
-      </Text>
-    </SafeAreaView>
-  );
-};  
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  header: {
+    paddingTop: 40,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  formContainer: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 16,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 16,
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+  subtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+    paddingVertical: 4,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  signUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    paddingVertical: 8,
+  },
+  signUpText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  signUpLink: {
+    fontSize: 15,
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header with Logo */}
+          <View style={styles.header}>
+            <Logo size="large" showTagline={true} />
+          </View>
+
+          {/* Form */}
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
+
+            <TextInput
+              label="Email or Username"
+              placeholder="Enter your email or username"
+              value={identifier}
+              onChangeText={setIdentifier}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+            />
+
+            <PasswordInput
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+            </TouchableOpacity>
+
+            <Button
+              title="Sign In"
+              onPress={handleSignIn}
+              loading={loading}
+              disabled={loading}
+            />
+
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('SignUp')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.signUpLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
 
 export default SignIn;
