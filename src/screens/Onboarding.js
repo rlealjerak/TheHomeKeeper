@@ -2,39 +2,41 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import { Logo } from '../components/Logo';
 import { Button } from '../components/Button';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
-
-const slides = [
-  {
-    id: '1',
-    icon: 'home',
-    title: 'Welcome to TheHomeKeeper',
-    description: 'Track your home maintenance effortlessly and never miss important tasks.',
-  },
-  {
-    id: '2',
-    icon: 'bell',
-    title: 'Never Miss Maintenance',
-    description: 'Get reminders before tasks are due so you can stay on top of your home care.',
-  },
-  {
-    id: '3',
-    icon: 'check-circle',
-    title: 'You\'re All Set!',
-    description: 'Let\'s start adding your first item and keeping your home in perfect condition.',
-  },
-];
 
 // Onboarding screen - shows on first launch after sign-up
 const Onboarding = ({ onComplete }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Slides data with translated content
+  const slides = [
+    {
+      id: '1',
+      icon: 'home',
+      title: t('onboarding.slide1Title'),
+      description: t('onboarding.slide1Desc'),
+    },
+    {
+      id: '2',
+      icon: 'bell',
+      title: t('onboarding.slide2Title'),
+      description: t('onboarding.slide2Desc'),
+    },
+    {
+      id: '3',
+      icon: 'check-circle',
+      title: t('onboarding.slide3Title'),
+      description: t('onboarding.slide3Desc'),
+    },
+  ];
 
   const handleNext = () => {
     if (currentIndex < slides.length - 1) {
@@ -113,11 +115,6 @@ const Onboarding = ({ onComplete }) => {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-    },
-    header: {
-      paddingTop: 20,
-      paddingBottom: 20,
-      alignItems: 'center',
     },
     slide: {
       width: width,
@@ -199,11 +196,6 @@ const Onboarding = ({ onComplete }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Logo at top */}
-      <View style={styles.header}>
-        <Logo size="small" />
-      </View>
-
       {/* Slides */}
       <FlatList
         ref={flatListRef}
@@ -233,17 +225,17 @@ const Onboarding = ({ onComplete }) => {
         {currentIndex < slides.length - 1 ? (
           <View style={styles.buttonRow}>
             <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-              <Text style={styles.skipText}>Skip</Text>
+              <Text style={styles.skipText}>{t('common.skip')}</Text>
             </TouchableOpacity>
             <Button
-              title="Next"
+              title={t('common.next')}
               onPress={handleNext}
               style={styles.nextButton}
             />
           </View>
         ) : (
           <Button
-            title="Get Started"
+            title={t('onboarding.addFirstItem')}
             onPress={handleComplete}
             style={styles.getStartedButton}
           />

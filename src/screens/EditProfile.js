@@ -8,11 +8,13 @@ import { TextInput } from '../components/TextInput';
 import { PasswordInput } from '../components/PasswordInput';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 // Edit Profile screen - allows users to update their information
 const EditProfile = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const [uid, setUid] = useState(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -45,7 +47,7 @@ const EditProfile = () => {
           }
         })
         .catch(error => {
-          console.error('Error fetching user data:', error);
+          // Failed to fetch user data
         });
     }
   }, []);
@@ -53,7 +55,7 @@ const EditProfile = () => {
   // Update profile information
   const handleUpdateProfile = async () => {
     if (!name.trim() || !lastName.trim() || !username.trim()) {
-      Alert.alert('Required Fields', 'Please fill in all fields.');
+      Alert.alert(t('validation.required'), t('validation.fillAllFields'));
       return;
     }
 
@@ -67,7 +69,7 @@ const EditProfile = () => {
         .get();
 
       if (!usernameQuery.empty && usernameQuery.docs[0].id !== uid) {
-        Alert.alert('Username Taken', 'This username is already in use. Please choose another.');
+        Alert.alert(t('validation.required'), t('validation.usernameTaken'));
         setLoading(false);
         return;
       }
@@ -79,10 +81,9 @@ const EditProfile = () => {
         username,
       });
 
-      Alert.alert('Success', 'Profile updated successfully!');
+      Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'));
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      Alert.alert(t('editProfile.errorTitle'), t('editProfile.usernameError'));
     } finally {
       setLoading(false);
     }
@@ -91,17 +92,17 @@ const EditProfile = () => {
   // Change password
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Required Fields', 'Please fill in all password fields.');
+      Alert.alert(t('validation.required'), t('validation.fillPasswordFields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'New passwords do not match.');
+      Alert.alert(t('common.error'), t('validation.passwordMismatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+      Alert.alert(t('common.error'), t('validation.weakPassword'));
       return;
     }
 
@@ -116,24 +117,23 @@ const EditProfile = () => {
       // Update password
       await user.updatePassword(newPassword);
 
-      Alert.alert('Success', 'Password changed successfully!');
+      Alert.alert(t('common.success'), t('editProfile.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setShowPasswordSection(false);
     } catch (error) {
-      console.error('Error changing password:', error);
-      let errorMessage = 'Failed to change password. Please try again.';
+      let errorMessage = t('validation.unknownError');
 
       if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Current password is incorrect.';
+        errorMessage = t('validation.currentPasswordWrong');
       } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'New password is too weak.';
+        errorMessage = t('validation.newPasswordWeak');
       } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = 'Please sign out and sign in again before changing your password.';
+        errorMessage = t('validation.recentLoginRequired');
       }
 
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -142,12 +142,12 @@ const EditProfile = () => {
   // Delete account (GDPR compliance)
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Are you absolutely sure? This action cannot be undone. All your data will be permanently deleted.',
+      t('editProfile.deleteAccount'),
+      t('editProfile.deleteConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete Forever',
+          text: t('editProfile.deleteForever'),
           style: 'destructive',
           onPress: () => confirmDeleteAccount(),
         },
@@ -157,18 +157,18 @@ const EditProfile = () => {
 
   const confirmDeleteAccount = () => {
     Alert.prompt(
-      'Confirm Deletion',
-      'Type DELETE to confirm account deletion:',
+      t('editProfile.confirmDeletion'),
+      t('editProfile.typeDelete'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Confirm',
+          text: t('editProfile.confirm'),
           style: 'destructive',
           onPress: async (text) => {
-            if (text === 'DELETE') {
+            if (text === 'DELETE' || text === 'ELIMINAR' || text === 'EXCLUIR' || text === 'SUPPRIMER') {
               await performAccountDeletion();
             } else {
-              Alert.alert('Cancelled', 'Please type DELETE to confirm.');
+              Alert.alert(t('editProfile.cancelled'), t('editProfile.pleaseTypeDelete'));
             }
           },
         },
@@ -200,16 +200,15 @@ const EditProfile = () => {
       // Delete Firebase Auth account
       await user.delete();
 
-      Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
+      Alert.alert(t('editProfile.accountDeleted'), t('editProfile.accountDeletedMessage'));
     } catch (error) {
-      console.error('Error deleting account:', error);
-      let errorMessage = 'Failed to delete account. Please try again.';
+      let errorMessage = t('validation.unknownError');
 
       if (error.code === 'auth/requires-recent-login') {
-        errorMessage = 'Please sign out and sign in again before deleting your account.';
+        errorMessage = t('validation.recentLoginRequired');
       }
 
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -293,18 +292,18 @@ const EditProfile = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Profile Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Information</Text>
+          <Text style={styles.sectionTitle}>{t('editProfile.profileInfo')}</Text>
 
           <View style={styles.nameRow}>
             <TextInput
-              label="First Name"
+              label={t('editProfile.firstName')}
               value={name}
               onChangeText={setName}
               style={styles.halfInput}
             />
             <View style={styles.nameGap} />
             <TextInput
-              label="Last Name"
+              label={t('editProfile.lastName')}
               value={lastName}
               onChangeText={setLastName}
               style={styles.halfInput}
@@ -312,22 +311,22 @@ const EditProfile = () => {
           </View>
 
           <TextInput
-            label="Username"
+            label={t('editProfile.username')}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
           />
 
           <TextInput
-            label="Email"
+            label={t('editProfile.email')}
             value={email}
             editable={false}
             style={styles.disabledInput}
           />
-          <Text style={styles.hint}>Email cannot be changed for security reasons.</Text>
+          <Text style={styles.hint}>{t('editProfile.emailHint')}</Text>
 
           <Button
-            title="Save Changes"
+            title={t('editProfile.saveChanges')}
             onPress={handleUpdateProfile}
             loading={loading}
             disabled={loading}
@@ -341,36 +340,36 @@ const EditProfile = () => {
             style={styles.sectionHeader}
             onPress={() => setShowPasswordSection(!showPasswordSection)}
           >
-            <Text style={styles.sectionTitle}>Change Password</Text>
+            <Text style={styles.sectionTitle}>{t('editProfile.changePassword')}</Text>
             <Text style={styles.expandIcon}>{showPasswordSection ? '−' : '+'}</Text>
           </TouchableOpacity>
 
           {showPasswordSection && (
             <>
               <PasswordInput
-                label="Current Password"
-                placeholder="Enter current password"
+                label={t('editProfile.currentPassword')}
+                placeholder={t('editProfile.currentPasswordPlaceholder')}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
               />
 
               <PasswordInput
-                label="New Password"
-                placeholder="Enter new password"
+                label={t('editProfile.newPassword')}
+                placeholder={t('editProfile.newPasswordPlaceholder')}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 showStrength={true}
               />
 
               <PasswordInput
-                label="Confirm New Password"
-                placeholder="Re-enter new password"
+                label={t('editProfile.confirmPassword')}
+                placeholder={t('editProfile.confirmPasswordPlaceholder')}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
 
               <Button
-                title="Change Password"
+                title={t('editProfile.changePassword')}
                 onPress={handleChangePassword}
                 loading={loading}
                 disabled={loading}
@@ -385,18 +384,18 @@ const EditProfile = () => {
             style={styles.sectionHeader}
             onPress={() => setShowDeleteSection(!showDeleteSection)}
           >
-            <Text style={[styles.sectionTitle, styles.dangerText]}>Delete Account</Text>
+            <Text style={[styles.sectionTitle, styles.dangerText]}>{t('editProfile.deleteAccount')}</Text>
             <Text style={styles.expandIcon}>{showDeleteSection ? '−' : '+'}</Text>
           </TouchableOpacity>
 
           {showDeleteSection && (
             <>
               <Text style={styles.dangerWarning}>
-                Warning: This action is permanent and cannot be undone. All your items and data will be deleted.
+                {t('editProfile.deleteWarning')}
               </Text>
 
               <Button
-                title="Delete My Account"
+                title={t('editProfile.deleteMyAccount')}
                 onPress={handleDeleteAccount}
                 variant="secondary"
                 style={styles.deleteButton}

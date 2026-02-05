@@ -27,7 +27,7 @@ export const ThemeProvider = ({ children }) => {
           setThemeMode(savedTheme);
         }
       } catch (error) {
-        console.error('Error loading theme preference:', error);
+        // Theme loading failed, use default
       } finally {
         setIsLoading(false);
       }
@@ -52,7 +52,7 @@ export const ThemeProvider = ({ children }) => {
       setThemeMode(mode);
       await AsyncStorage.setItem('themeMode', mode);
     } catch (error) {
-      console.error('Error saving theme preference:', error);
+      // Theme saving failed silently
     }
   };
 

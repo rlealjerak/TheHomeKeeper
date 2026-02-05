@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   Switch,
   TouchableOpacity,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -16,6 +18,8 @@ import dayjs from 'dayjs';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../components/Button';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage } from '../i18n';
 import {
   requestNotificationPermission,
   cancelAllNotifications,
@@ -25,13 +29,31 @@ import {
 // Settings screen component - displays user profile and logout functionality
 const Settings = ({ navigation }) => {
   const { colors, themeMode, setTheme, isDark } = useTheme();
+  const { t, i18n } = useTranslation();
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const currentLanguage = getCurrentLanguage();
+
+  // Handle language change
+  const handleLanguageChange = async (langCode) => {
+    await changeLanguage(langCode);
+    setLanguageModalVisible(false);
+  };
+
+  // Get current language display name
+  const getCurrentLanguageName = () => {
+    const lang = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage);
+    return lang ? lang.nativeName : 'English';
+  };
 
   // Dynamic styles based on theme - must be inside component to access colors
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      padding: 16,
       backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 32,
     },
     centerContent: {
       flex: 1,
@@ -147,6 +169,69 @@ const Settings = ({ navigation }) => {
     editButton: {
       marginBottom: 12,
     },
+    languageButton: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    languageButtonText: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    languageValue: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    languageValueText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginRight: 8,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 24,
+      width: '85%',
+      maxWidth: 340,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    languageOption: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 14,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    languageOptionActive: {
+      backgroundColor: colors.primaryLight,
+    },
+    languageOptionText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    languageOptionNative: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    modalCloseButton: {
+      marginTop: 16,
+    },
   });
   const [uid, setUid] = useState(null);
   const [authEmail, setAuthEmail] = useState(null);
@@ -189,7 +274,6 @@ const Settings = ({ navigation }) => {
           setLoading(false);
         },
         (err) => {
-          console.error('Error fetching user data:', err);
           setError('Failed to load user data');
           setLoading(false);
         }
@@ -207,7 +291,7 @@ const Settings = ({ navigation }) => {
           setNotificationsEnabled(value === 'true');
         }
       } catch (error) {
-        console.error('Error loading notification preference:', error);
+        // Failed to load notification preference
       }
     };
     loadNotificationPreference();
@@ -216,26 +300,25 @@ const Settings = ({ navigation }) => {
   // Handles user logout with confirmation dialog
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('settings.logout'),
+      t('settings.logoutConfirm'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: t('settings.logout'),
           style: 'destructive',
           onPress: async () => {
             try {
               await auth().signOut();
               // RootNavigator's onAuthStateChanged will handle navigation
             } catch (err) {
-              console.error('Logout error:', err);
               Alert.alert(
-                'Logout Failed',
-                'An error occurred while logging out. Please try again.',
-                [{ text: 'OK' }]
+                t('common.error'),
+                t('settings.logoutError'),
+                [{ text: t('common.ok') }]
               );
             }
           },
@@ -263,9 +346,9 @@ const Settings = ({ navigation }) => {
         const hasPermission = await requestNotificationPermission();
         if (!hasPermission) {
           Alert.alert(
-            'Permission Denied',
-            'Please enable notifications in your device settings to receive maintenance reminders.',
-            [{ text: 'OK' }]
+            t('settings.permissionDenied'),
+            t('settings.enableNotifications'),
+            [{ text: t('common.ok') }]
           );
           return;
         }
@@ -277,8 +360,7 @@ const Settings = ({ navigation }) => {
       setNotificationsEnabled(value);
       await AsyncStorage.setItem('notificationsEnabled', value.toString());
     } catch (error) {
-      console.error('Error toggling notifications:', error);
-      Alert.alert('Error', 'Failed to update notification settings.');
+      Alert.alert(t('common.error'), t('settings.notificationError'));
     }
   };
 
@@ -288,7 +370,7 @@ const Settings = ({ navigation }) => {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -301,9 +383,9 @@ const Settings = ({ navigation }) => {
         <View style={styles.centerContent}>
           <Text style={styles.errorText}>{error}</Text>
           <View style={styles.buttonContainer}>
-            <Button title="Retry" onPress={handleRetry} />
+            <Button title={t('common.retry')} onPress={handleRetry} />
             <Button
-              title="Go Back"
+              title={t('common.back')}
               variant="secondary"
               onPress={() => navigation.goBack()}
             />
@@ -325,40 +407,44 @@ const Settings = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
       {/* Profile Card */}
       <View style={styles.profileCard}>
-        <Text style={styles.sectionHeader}>Profile</Text>
+        <Text style={styles.sectionHeader}>{t('settings.profile')}</Text>
 
         <View style={styles.profileItem}>
-          <Text style={styles.profileLabel}>Full Name</Text>
+          <Text style={styles.profileLabel}>{t('settings.fullName')}</Text>
           <Text style={styles.profileValue}>
             {userData?.name || 'N/A'} {userData?.lastName || ''}
           </Text>
         </View>
 
         <View style={styles.profileItem}>
-          <Text style={styles.profileLabel}>Username</Text>
+          <Text style={styles.profileLabel}>{t('settings.username')}</Text>
           <Text style={styles.profileValue}>
             @{userData?.username || 'N/A'}
           </Text>
         </View>
 
         <View style={styles.profileItem}>
-          <Text style={styles.profileLabel}>Email</Text>
+          <Text style={styles.profileLabel}>{t('settings.email')}</Text>
           <Text style={styles.profileValue}>{userData?.email || authEmail || 'N/A'}</Text>
         </View>
 
         <View style={styles.profileItem}>
-          <Text style={styles.profileLabel}>Account Created</Text>
+          <Text style={styles.profileLabel}>{t('settings.accountCreated')}</Text>
           <Text style={styles.profileValue}>
-            Member since {formatDate(userData?.createdAt)}
+            {t('settings.memberSince')} {formatDate(userData?.createdAt)}
           </Text>
         </View>
       </View>
 
       {/* Theme Settings */}
       <View style={styles.settingsCard}>
-        <Text style={styles.sectionHeader}>Appearance</Text>
+        <Text style={styles.sectionHeader}>{t('settings.appearance')}</Text>
 
         <View style={styles.themeOptions}>
           <TouchableOpacity
@@ -379,7 +465,7 @@ const Settings = ({ navigation }) => {
                 themeMode === 'light' && styles.themeOptionTextActive,
               ]}
             >
-              Light
+              {t('settings.light')}
             </Text>
           </TouchableOpacity>
 
@@ -401,7 +487,7 @@ const Settings = ({ navigation }) => {
                 themeMode === 'dark' && styles.themeOptionTextActive,
               ]}
             >
-              Dark
+              {t('settings.dark')}
             </Text>
           </TouchableOpacity>
 
@@ -423,7 +509,7 @@ const Settings = ({ navigation }) => {
                 themeMode === 'auto' && styles.themeOptionTextActive,
               ]}
             >
-              Auto
+              {t('settings.auto')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -431,13 +517,13 @@ const Settings = ({ navigation }) => {
 
       {/* Notification Settings */}
       <View style={styles.settingsCard}>
-        <Text style={styles.sectionHeader}>Notifications</Text>
+        <Text style={styles.sectionHeader}>{t('settings.notifications')}</Text>
 
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Maintenance Reminders</Text>
+            <Text style={styles.settingLabel}>{t('settings.maintenanceReminders')}</Text>
             <Text style={styles.settingDescription}>
-              Get notified before items need maintenance
+              {t('settings.notificationDesc')}
             </Text>
           </View>
           <Switch
@@ -449,16 +535,77 @@ const Settings = ({ navigation }) => {
         </View>
       </View>
 
+      {/* Language Settings */}
+      <View style={styles.settingsCard}>
+        <Text style={styles.sectionHeader}>{t('settings.language')}</Text>
+
+        <TouchableOpacity
+          style={styles.languageButton}
+          onPress={() => setLanguageModalVisible(true)}
+        >
+          <Text style={styles.languageButtonText}>{t('settings.selectLanguage')}</Text>
+          <View style={styles.languageValue}>
+            <Text style={styles.languageValueText}>{getCurrentLanguageName()}</Text>
+            <Icon name="chevron-right" size={20} color={colors.textSecondary} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Edit Profile Button */}
       <Button
-        title="Edit Profile"
+        title={t('settings.editProfile')}
         variant="outline"
         onPress={() => navigation.navigate('EditProfile')}
         style={styles.editButton}
       />
 
       {/* Logout Button */}
-      <Button title="Logout" onPress={handleLogout} />
+      <Button title={t('settings.logout')} onPress={handleLogout} />
+      </ScrollView>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('settings.selectLanguage')}</Text>
+
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <TouchableOpacity
+                key={lang.code}
+                style={[
+                  styles.languageOption,
+                  currentLanguage === lang.code && styles.languageOptionActive,
+                ]}
+                onPress={() => handleLanguageChange(lang.code)}
+              >
+                <View>
+                  <Text style={styles.languageOptionText}>{lang.nativeName}</Text>
+                  <Text style={styles.languageOptionNative}>{lang.name}</Text>
+                </View>
+                {currentLanguage === lang.code && (
+                  <Icon name="check" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+
+            <Button
+              title={t('common.cancel')}
+              variant="outline"
+              onPress={() => setLanguageModalVisible(false)}
+              style={styles.modalCloseButton}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };

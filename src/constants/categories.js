@@ -50,6 +50,13 @@ export const CATEGORIES = [
     description: 'Lawn, trees, irrigation, garden',
   },
   {
+    id: 'car',
+    name: 'Car',
+    icon: 'truck',
+    color: '#3D5A80',
+    description: 'Oil change, tires, brakes, fluids',
+  },
+  {
     id: 'other',
     name: 'Other',
     icon: 'more-horizontal',

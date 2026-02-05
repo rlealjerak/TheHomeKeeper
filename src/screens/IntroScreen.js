@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { useTheme } from '../contexts/ThemeContext';
 import Icon from 'react-native-vector-icons/Feather';
+import { useTranslation } from 'react-i18next';
 
 export default function IntroScreen({ navigation }) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const styles = StyleSheet.create({
     container: {
@@ -41,16 +43,15 @@ export default function IntroScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.welcomeHeader}>
         <Icon name="home" size={40} color={colors.primary} style={styles.icon} />
-        <Text style={styles.title}>Welcome to TheHomeKeeper</Text>
+        <Text style={styles.title}>{t('intro.welcomeTitle')}</Text>
       </View>
 
       <Text style={styles.subtitle}>
-        You don't have any items yet.
-        Start tracking your maintenance and keep everything organized.
+        {t('intro.noItemsYet')} {t('intro.startTracking')}
       </Text>
 
       <Button
-        title="Add Your First Item"
+        title={t('intro.addFirstItem')}
         onPress={() => navigation.navigate('AddItem')}
       />
     </SafeAreaView>

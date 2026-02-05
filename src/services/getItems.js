@@ -14,7 +14,6 @@ async function getItems(uid) {
 
     return items;
   } catch (e) {
-    console.error('Error getting items:', e);
     return [];
   }
 }

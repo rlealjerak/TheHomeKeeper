@@ -8,10 +8,8 @@ const deleteItem = async (itemId) => {
 
     const itemRef = firestore().collection('items').doc(itemId);
     await itemRef.delete();
-    console.log('Item deleted successfully');
     return { success: true };
   } catch (e) {
-    console.error('Error deleting item:', e);
     return { success: false, error: e };
   }
 };

@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import { CATEGORIES, getCategoryById } from '../constants/categories';
 
 // Category picker component with modal selection
 export const CategoryPicker = ({ selectedCategory, onSelect, label }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const selected = getCategoryById(selectedCategory);
 
@@ -125,7 +127,7 @@ export const CategoryPicker = ({ selectedCategory, onSelect, label }) => {
             <Icon name={selected.icon} size={24} color={selected.color} />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.categoryName}>{selected.name}</Text>
+            <Text style={styles.categoryName}>{t(`categories.${selected.id}`)}</Text>
             <Text style={styles.categoryDescription}>{selected.description}</Text>
           </View>
         </View>
@@ -141,7 +143,7 @@ export const CategoryPicker = ({ selectedCategory, onSelect, label }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+              <Text style={styles.modalTitle}>{t('addItem.category')}</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -165,7 +167,7 @@ export const CategoryPicker = ({ selectedCategory, onSelect, label }) => {
                     <Icon name={item.icon} size={28} color={item.color} />
                   </View>
                   <View style={styles.categoryInfo}>
-                    <Text style={styles.categoryItemName}>{item.name}</Text>
+                    <Text style={styles.categoryItemName}>{t(`categories.${item.id}`)}</Text>
                     <Text style={styles.categoryItemDescription}>{item.description}</Text>
                   </View>
                   {selectedCategory === item.id && (

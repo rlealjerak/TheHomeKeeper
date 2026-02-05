@@ -7,7 +7,6 @@ export const requestNotificationPermission = async () => {
     const settings = await notifee.requestPermission();
     return settings.authorizationStatus >= 1; // 1 = authorized, 2 = provisional
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
     return false;
   }
 };
@@ -22,7 +21,7 @@ const createChannel = async () => {
       sound: 'default',
     });
   } catch (error) {
-    console.error('Error creating notification channel:', error);
+    // Channel creation failed silently
   }
 };
 
@@ -117,7 +116,6 @@ export const scheduleMaintenanceNotifications = async (item) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Error scheduling notifications:', error);
     return { success: false, error };
   }
 };
@@ -130,7 +128,6 @@ export const cancelNotifications = async (itemId) => {
     await notifee.cancelNotification(`${itemId}-today`);
     return { success: true };
   } catch (error) {
-    console.error('Error canceling notifications:', error);
     return { success: false, error };
   }
 };
@@ -142,7 +139,6 @@ export const updateNotifications = async (item) => {
     await scheduleMaintenanceNotifications(item);
     return { success: true };
   } catch (error) {
-    console.error('Error updating notifications:', error);
     return { success: false, error };
   }
 };
@@ -153,7 +149,6 @@ export const getScheduledNotifications = async () => {
     const notifications = await notifee.getTriggerNotifications();
     return notifications;
   } catch (error) {
-    console.error('Error getting scheduled notifications:', error);
     return [];
   }
 };
@@ -164,7 +159,6 @@ export const cancelAllNotifications = async () => {
     await notifee.cancelAllNotifications();
     return { success: true };
   } catch (error) {
-    console.error('Error canceling all notifications:', error);
     return { success: false, error };
   }
 };

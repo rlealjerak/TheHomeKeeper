@@ -3,6 +3,9 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import deleteItems from '../services/deleteItems';
+import updateItems from '../services/updateItems';
+import { updateNotifications } from '../services/notificationService';
+import { addMaintenanceRecord } from '../services/maintenanceHistory';
 import { useNavigation } from '@react-navigation/native';
 import dayjs from 'dayjs';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,9 +14,11 @@ import Icon from 'react-native-vector-icons/Feather';
 import { SearchBar } from '../components/SearchBar';
 import { FilterBar } from '../components/FilterBar';
 import { getCategoryIcon, getCategoryColor } from '../constants/categories';
+import { useTranslation } from 'react-i18next';
 
 const ItemDashboard = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [uid, setUid] = useState(null);
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,7 +54,7 @@ const ItemDashboard = () => {
         });
         setItems(userItems);
       }, error => {
-        console.error('Error fetching items in real-time:', error);
+        // Error fetching items - handled silently
       });
 
     return unsubscribe;
@@ -66,10 +71,10 @@ const ItemDashboard = () => {
     const nextDate = nextMaintenanceDate(item);
     const daysUntil = nextDate.diff(dayjs(), 'day');
 
-    if (daysUntil < 0) return `Overdue by ${Math.abs(daysUntil)} days`;
-    if (daysUntil === 0) return 'Due today';
-    if (daysUntil === 1) return 'Due tomorrow';
-    if (daysUntil <= 7) return `Due in ${daysUntil} days`;
+    if (daysUntil < 0) return t('dashboard.overdueBy', { days: Math.abs(daysUntil) });
+    if (daysUntil === 0) return t('dashboard.dueToday');
+    if (daysUntil === 1) return t('dashboard.dueTomorrow');
+    if (daysUntil <= 7) return t('dashboard.dueInDays', { days: daysUntil });
     return nextDate.format('MMM D, YYYY');
   };
 
@@ -133,15 +138,15 @@ const ItemDashboard = () => {
   // Delete item
   const handleDeleteItem = (item) => {
     Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete ${item.name}?`,
+      t('dashboard.deleteItem'),
+      t('dashboard.deleteConfirm', { name: item.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete', style: 'destructive', onPress: async () => {
+          text: t('common.delete'), style: 'destructive', onPress: async () => {
             const result = await deleteItems(item.id);
             if (!result.success) {
-              Alert.alert('Error', 'Failed to delete item. Please try again.');
+              Alert.alert(t('common.error'), t('addItem.addError'));
             }
           }
         },
@@ -154,15 +159,76 @@ const ItemDashboard = () => {
     navigation.navigate('AddItem', { item });
   };
 
-  // Menu for Edit/Delete
+  // Mark maintenance as complete - updates lastMaintenanceDate to today and records history
+  const handleMarkComplete = (item) => {
+    Alert.alert(
+      t('dashboard.markComplete'),
+      t('dashboard.markCompleteConfirm', { name: item.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('dashboard.markComplete'),
+          onPress: async () => {
+            try {
+              const today = new Date();
+              const result = await updateItems(item.id, {
+                lastMaintenanceDate: today,
+              });
+
+              if (result.success) {
+                // Record in maintenance history - ensure uid is available
+                if (uid) {
+                  const historyResult = await addMaintenanceRecord(item.id, uid, '');
+                  if (!historyResult.success) {
+                    // History recording failed but item was updated - continue
+                  }
+                }
+
+                // Update notifications with new schedule
+                try {
+                  await updateNotifications({
+                    ...item,
+                    lastMaintenanceDate: today,
+                  });
+                } catch (notifError) {
+                  // Notification update failed - non-critical
+                }
+
+                Alert.alert(
+                  t('dashboard.maintenanceCompleted'),
+                  t('dashboard.maintenanceCompletedMessage', {
+                    name: item.name,
+                    days: item.frequency,
+                  })
+                );
+              } else {
+                Alert.alert(t('common.error'), t('addItem.updateError'));
+              }
+            } catch (error) {
+              Alert.alert(t('common.error'), t('addItem.updateError'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // View maintenance history for an item
+  const handleViewHistory = (item) => {
+    navigation.navigate('MaintenanceHistory', { item });
+  };
+
+  // Menu for Edit/Delete/Mark Complete/View History
   const showItemMenu = (item) => {
     Alert.alert(
       item.name,
-      'Select an action',
+      t('dashboard.selectAction'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Edit', onPress: () => handleEditItem(item) },
-        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteItem(item) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('dashboard.markComplete'), onPress: () => handleMarkComplete(item) },
+        { text: t('dashboard.viewHistory'), onPress: () => handleViewHistory(item) },
+        { text: t('common.edit'), onPress: () => handleEditItem(item) },
+        { text: t('common.delete'), style: 'destructive', onPress: () => handleDeleteItem(item) },
       ]
     );
   };
@@ -179,15 +245,27 @@ const ItemDashboard = () => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      padding: 16,
       backgroundColor: colors.background,
     },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 12,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+    },
     settingsButton: {
-      position: 'absolute',
-      top: 60,
-      right: 16,
       padding: 8,
-      zIndex: 10,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
     },
     summaryCard: {
       padding: 16,
@@ -245,6 +323,22 @@ const ItemDashboard = () => {
     menuButton: {
       padding: 4,
     },
+    completeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.success,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      marginTop: 8,
+      alignSelf: 'flex-start',
+    },
+    completeButtonText: {
+      color: 'white',
+      fontSize: 12,
+      fontWeight: '600',
+      marginLeft: 4,
+    },
     addButton: {
       position: 'absolute',
       bottom: 20,
@@ -284,20 +378,26 @@ const ItemDashboard = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Settings Button */}
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={() => navigation.navigate('Settings')}
-      >
-        <Icon name="settings" size={24} color={colors.text} />
-      </TouchableOpacity>
+      {/* Header Row - Title + Settings */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{t('dashboard.title')}</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate('Settings')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Icon name="settings" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
 
+      {/* Main Content */}
+      <View style={styles.content}>
       {/* Summary */}
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryText}>Total items: {items.length}</Text>
+        <Text style={styles.summaryText}>{t('dashboard.totalItems')} {items.length}</Text>
         {nextMaintenanceItem && (
           <Text style={styles.summaryText}>
-            Next maintenance: {nextMaintenanceItem.name} – {formatMaintenanceDate(nextMaintenanceItem)}
+            {t('dashboard.nextMaintenance')} {nextMaintenanceItem.name} – {formatMaintenanceDate(nextMaintenanceItem)}
           </Text>
         )}
       </View>
@@ -307,6 +407,7 @@ const ItemDashboard = () => {
         value={searchQuery}
         onChangeText={setSearchQuery}
         onClear={() => setSearchQuery('')}
+        placeholder={t('dashboard.searchPlaceholder')}
       />
 
       {/* Filter Bar */}
@@ -329,7 +430,7 @@ const ItemDashboard = () => {
           color={colors.primary}
         />
         <Text style={styles.toggleCategoriesText}>
-          {showCategoryFilter ? 'Hide' : 'Show'} Categories
+          {showCategoryFilter ? t('dashboard.hideCategories') : t('dashboard.showCategories')}
         </Text>
       </TouchableOpacity>
 
@@ -343,13 +444,13 @@ const ItemDashboard = () => {
             <Icon name="inbox" size={48} color={colors.textMuted} />
             <Text style={styles.emptyText}>
               {searchQuery || statusFilter !== 'all' || categoryFilter
-                ? 'No items match your filters'
-                : 'No items yet'}
+                ? t('dashboard.noItemsMatch')
+                : t('dashboard.noItemsYet')}
             </Text>
             <Text style={styles.emptyHint}>
               {searchQuery || statusFilter !== 'all' || categoryFilter
-                ? 'Try adjusting your search or filters'
-                : 'Tap + to add your first item'}
+                ? t('dashboard.adjustFilters')
+                : t('dashboard.tapToAdd')}
             </Text>
           </View>
         }
@@ -369,10 +470,20 @@ const ItemDashboard = () => {
                     </View>
                   )}
                 </View>
-                <Text style={styles.itemDetail}>Last: {dayjs(item.lastMaintenanceDate).format('MMM D, YYYY')}</Text>
-                <Text style={styles.itemDetail}>Next: {formatMaintenanceDate(item)}</Text>
-                <Text style={styles.itemDetail}>Frequency: {item.frequency} days</Text>
-                {item.notes ? <Text style={styles.itemDetail}>Notes: {item.notes}</Text> : null}
+                <Text style={styles.itemDetail}>{t('dashboard.last')} {dayjs(item.lastMaintenanceDate).format('MMM D, YYYY')}</Text>
+                <Text style={styles.itemDetail}>{t('dashboard.nextLabel')} {formatMaintenanceDate(item)}</Text>
+                <Text style={styles.itemDetail}>{t('dashboard.frequency')} {item.frequency} {t('dashboard.days')}</Text>
+                {item.notes ? <Text style={styles.itemDetail}>{t('dashboard.notes')} {item.notes}</Text> : null}
+                {/* Quick Mark Complete button for overdue or due soon items */}
+                {(getItemStatus(item) === 'overdue' || getItemStatus(item) === 'soon') && (
+                  <TouchableOpacity
+                    style={styles.completeButton}
+                    onPress={() => handleMarkComplete(item)}
+                  >
+                    <Icon name="check-circle" size={14} color="white" />
+                    <Text style={styles.completeButtonText}>{t('dashboard.markComplete')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity onPress={() => showItemMenu(item)} style={styles.menuButton}>
                 <Icon name="more-vertical" size={24} color={colors.textSecondary} />
@@ -381,13 +492,14 @@ const ItemDashboard = () => {
           </View>
         )}
       />
+      </View>
 
       {/* Add Item button */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => navigation.navigate('AddItem')}
       >
-        <Text style={styles.addButtonText}>+ Add Item</Text>
+        <Text style={styles.addButtonText}>{t('dashboard.addItem')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

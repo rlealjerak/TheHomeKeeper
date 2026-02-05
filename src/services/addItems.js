@@ -15,7 +15,6 @@ async function addItem(uid, name, category, notes, lastMaintenanceDate, frequenc
 
     return { success: true, id: docRef.id };
   } catch (error) {
-    console.error('Error adding item:', error);
     return { success: false, error };
   }
 }

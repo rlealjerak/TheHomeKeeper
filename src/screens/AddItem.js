@@ -12,6 +12,7 @@ import { Button } from '../components/Button';
 import { TextInput } from '../components/TextInput';
 import { CategoryPicker } from '../components/CategoryPicker';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import {
   requestNotificationPermission,
   scheduleMaintenanceNotifications,
@@ -22,6 +23,7 @@ const AddItemScreen = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [category, setCategory] = useState('other');
   const [notes, setNotes] = useState('');
@@ -51,19 +53,19 @@ const AddItemScreen = () => {
 
   const handleAddItem = async () => {
     if (!name.trim()) {
-      Alert.alert('Missing Field', 'Please enter an item name.');
+      Alert.alert(t('validation.required'), t('addItem.missingName'));
       return;
     }
     if (!uid) {
-      Alert.alert('Authentication Error', 'User not authenticated. Please sign in again.');
+      Alert.alert(t('common.error'), t('addItem.authError'));
       return;
     }
     if (!lastMaintenanceDate) {
-      Alert.alert('Missing Field', 'Please select a last maintenance date.');
+      Alert.alert(t('validation.required'), t('addItem.missingDate'));
       return;
     }
     if (!frequency || !frequency.trim()) {
-      Alert.alert('Missing Field', 'Please enter maintenance frequency in days.');
+      Alert.alert(t('validation.required'), t('addItem.missingFrequency'));
       return;
     }
 
@@ -86,7 +88,7 @@ const AddItemScreen = () => {
         frequency: Number(frequency),
       });
       if (!result.success) {
-        Alert.alert('Error', 'Failed to update item. Please try again.');
+        Alert.alert(t('common.error'), t('addItem.updateError'));
         return;
       }
 
@@ -106,7 +108,7 @@ const AddItemScreen = () => {
 
     const result = await addItem(uid, name, category, notes, lastMaintenanceDate, Number(frequency));
     if (!result.success) {
-      Alert.alert('Error', 'Failed to add item. Please try again.');
+      Alert.alert(t('common.error'), t('addItem.addError'));
       return;
     }
 
@@ -184,21 +186,21 @@ const AddItemScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <TextInput
-            label="Item Name"
-            placeholder="e.g., Air Filter, Water Heater"
+            label={t('addItem.itemName')}
+            placeholder={t('addItem.itemNamePlaceholder')}
             value={name}
             onChangeText={setName}
           />
 
           <CategoryPicker
-            label="Category"
+            label={t('addItem.category')}
             selectedCategory={category}
             onSelect={setCategory}
           />
 
           <TextInput
-            label="Notes (Optional)"
-            placeholder="Add any notes about this item"
+            label={t('addItem.notesOptional')}
+            placeholder={t('addItem.notesPlaceholder')}
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -207,7 +209,7 @@ const AddItemScreen = () => {
           />
 
           <View style={styles.dateInputContainer}>
-            <Text style={styles.label}>Last Maintenance Date</Text>
+            <Text style={styles.label}>{t('addItem.lastMaintenanceDate')}</Text>
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowDatePicker(!showDatePicker)}
@@ -215,7 +217,7 @@ const AddItemScreen = () => {
               <Text style={styles.dateText}>
                 {lastMaintenanceDate
                   ? dayjs(lastMaintenanceDate).format('MMM D, YYYY')
-                  : 'Select date'}
+                  : t('addItem.selectDate')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -235,15 +237,15 @@ const AddItemScreen = () => {
           )}
 
           <TextInput
-            label="Maintenance Frequency"
-            placeholder="Number of days"
+            label={t('addItem.maintenanceFrequency')}
+            placeholder={t('addItem.frequencyPlaceholder')}
             value={frequency}
             onChangeText={setFrequency}
             keyboardType="numeric"
           />
 
           <Button
-            title={isEditing ? 'Save Changes' : 'Add Item'}
+            title={isEditing ? t('addItem.saveChanges') : t('addItem.addItemButton')}
             onPress={handleAddItem}
             style={styles.submitButton}
           />

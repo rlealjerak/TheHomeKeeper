@@ -2,14 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import { CATEGORIES, getCategoryIcon, getCategoryColor } from '../constants/categories';
-
-const STATUS_FILTERS = [
-  { id: 'all', label: 'All', icon: 'list' },
-  { id: 'overdue', label: 'Overdue', icon: 'alert-circle' },
-  { id: 'soon', label: 'Due Soon', icon: 'clock' },
-  { id: 'ok', label: 'OK', icon: 'check-circle' },
-];
 
 export const FilterBar = ({
   statusFilter,
@@ -19,6 +13,15 @@ export const FilterBar = ({
   showCategories = false,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  // Status filters with translated labels
+  const STATUS_FILTERS = [
+    { id: 'all', label: t('dashboard.all'), icon: 'list' },
+    { id: 'overdue', label: t('dashboard.overdue'), icon: 'alert-circle' },
+    { id: 'soon', label: t('dashboard.dueSoon'), icon: 'clock' },
+    { id: 'ok', label: t('dashboard.ok'), icon: 'check-circle' },
+  ];
 
   const styles = StyleSheet.create({
     statusFilters: {
@@ -111,7 +114,7 @@ export const FilterBar = ({
                 categoryFilter === null && styles.filterChipTextActive,
               ]}
             >
-              All
+              {t('dashboard.all')}
             </Text>
           </TouchableOpacity>
           {CATEGORIES.map((category) => (
@@ -134,7 +137,7 @@ export const FilterBar = ({
                   categoryFilter === category.id && styles.filterChipTextActive,
                 ]}
               >
-                {category.name}
+                {t(`categories.${category.id}`)}
               </Text>
             </TouchableOpacity>
           ))}

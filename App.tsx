@@ -4,8 +4,17 @@ import BootSplash from "react-native-bootsplash";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee, { EventType } from '@notifee/react-native';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+// Initialize i18n - must be imported before any component that uses translations
+import './src/i18n';
+// Initialize Google Sign-In configuration
+import { configureGoogleSignIn } from './src/services/googleAuth';
 
 export default function App() {
+  // Initialize Google Sign-In on app startup
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
+
   useEffect(() => {
     BootSplash.hide({ fade: true });
   }, []);
@@ -14,9 +23,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS) {
-        console.log('User pressed notification:', detail.notification);
-        // Note: Deep linking to specific item would require navigation ref
-        // For now, just log the event
+        // Notification pressed - deep linking to specific item would require navigation ref
       }
     });
 
@@ -28,9 +35,7 @@ export default function App() {
   // Handle notification events (background/quit state)
   useEffect(() => {
     notifee.onBackgroundEvent(async ({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        console.log('User pressed notification in background:', detail.notification);
-      }
+      // Background notification handler
     });
   }, []);
 

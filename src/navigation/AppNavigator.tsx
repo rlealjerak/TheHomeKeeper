@@ -3,6 +3,8 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import { useTranslation } from 'react-i18next';
+import { colors } from '../theme/colors';
 
 import Onboarding from '../screens/Onboarding';
 import IntroScreen from '../screens/IntroScreen';
@@ -10,14 +12,18 @@ import ItemDashboard from '../screens/ItemDashboard';
 import AddItem from '../screens/AddItem';
 import Settings from '../screens/Settings';
 import EditProfile from '../screens/EditProfile';
+import MaintenanceHistory from '../screens/MaintenanceHistory';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const { t } = useTranslation();
   const [uid, setUid] = useState<string | null>(null);
   const [hasItems, setHasItems] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
   const [itemsLoaded, setItemsLoaded] = useState(false);
+  // Track if user just completed onboarding (to skip IntroScreen and go to AddItem)
+  const [comingFromOnboarding, setComingFromOnboarding] = useState(false);
 
   // Get uid
   useEffect(() => {
@@ -45,7 +51,6 @@ export default function AppNavigator() {
           setHasOnboarded(false);
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
         setHasOnboarded(false);
       }
     };
@@ -68,7 +73,6 @@ export default function AppNavigator() {
           setItemsLoaded(true);
         },
         error => {
-          console.error('Error checking items:', error);
           setHasItems(false);
           setItemsLoaded(true);
         }
@@ -78,6 +82,7 @@ export default function AppNavigator() {
   }, [uid]);
 
   // Complete onboarding callback - saves to Firestore (per-account)
+  // Sets comingFromOnboarding flag so user goes directly to AddItem (not IntroScreen)
   const handleOnboardingComplete = async () => {
     try {
       if (uid) {
@@ -85,9 +90,10 @@ export default function AppNavigator() {
           hasOnboarded: true,
         });
       }
+      setComingFromOnboarding(true); // Flag to skip IntroScreen
       setHasOnboarded(true);
     } catch (error) {
-      console.error('Error saving onboarding status:', error);
+      setComingFromOnboarding(true);
       setHasOnboarded(true); // Still proceed even if save fails
     }
   };
@@ -96,7 +102,7 @@ export default function AppNavigator() {
   if (hasOnboarded === null) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#D4A84B" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -110,34 +116,44 @@ export default function AppNavigator() {
   if (!itemsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#D4A84B" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
+  // Determine initial route:
+  // - If user has items → ItemDashboard
+  // - If coming from onboarding (first-time) → AddItem directly (skip IntroScreen)
+  // - If returning user with 0 items → Intro (Welcome screen)
+  const getInitialRoute = () => {
+    if (hasItems) return 'ItemDashboard';
+    if (comingFromOnboarding) return 'AddItem';
+    return 'Intro';
+  };
+
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={hasItems ? 'ItemDashboard' : 'Intro'}
+      initialRouteName={getInitialRoute()}
     >
       <Stack.Screen name="Intro" component={IntroScreen} />
       <Stack.Screen name="ItemDashboard" component={ItemDashboard} />
       <Stack.Screen
         name="AddItem"
         component={AddItem}
-        options={{
+        options={({ route }) => ({
           headerShown: true,
-          headerTitle: 'Add Item',
-          headerBackTitle: 'Back',
-        }}
+          headerTitle: route.params?.item ? t('navigation.editItem') : t('navigation.addItem'),
+          headerBackTitle: t('navigation.back'),
+        })}
       />
       <Stack.Screen
         name="Settings"
         component={Settings}
         options={{
           headerShown: true,
-          headerTitle: 'Settings',
-          headerBackTitle: 'Back',
+          headerTitle: t('navigation.settings'),
+          headerBackTitle: t('navigation.back'),
         }}
       />
       <Stack.Screen
@@ -145,8 +161,17 @@ export default function AppNavigator() {
         component={EditProfile}
         options={{
           headerShown: true,
-          headerTitle: 'Edit Profile',
-          headerBackTitle: 'Back',
+          headerTitle: t('navigation.editProfile'),
+          headerBackTitle: t('navigation.back'),
+        }}
+      />
+      <Stack.Screen
+        name="MaintenanceHistory"
+        component={MaintenanceHistory}
+        options={{
+          headerShown: true,
+          headerTitle: t('history.title'),
+          headerBackTitle: t('navigation.back'),
         }}
       />
     </Stack.Navigator>
@@ -158,6 +183,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAF8F5',
+    backgroundColor: colors.background,
   },
 });
