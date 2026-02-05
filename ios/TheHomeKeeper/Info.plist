@@ -55,5 +55,16 @@
 	<array>
 		<string>Feather.ttf</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.999583790732-m1tbsm5p7o5nougdalg5hc58e5b0ptig</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
