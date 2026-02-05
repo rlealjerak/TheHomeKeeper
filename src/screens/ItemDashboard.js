@@ -260,7 +260,12 @@ const ItemDashboard = () => {
       fontWeight: '700',
       color: colors.text,
     },
-    settingsButton: {
+    headerButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    headerButton: {
       padding: 8,
     },
     content: {
@@ -378,16 +383,25 @@ const ItemDashboard = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Row - Title + Settings */}
+      {/* Header Row - Title + History + Settings */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('dashboard.title')}</Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => navigation.navigate('Settings')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Icon name="settings" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('AllMaintenanceHistory')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Icon name="clock" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('Settings')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Icon name="settings" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Main Content */}

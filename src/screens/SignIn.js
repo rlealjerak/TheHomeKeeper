@@ -108,15 +108,18 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      let emailToSignInWith = identifier;
+      let emailToSignInWith = identifier.trim();
 
       // If the identifier is not an email, assume it's a username and look up the email
-      if (!isEmail(identifier)) {
+      if (!isEmail(emailToSignInWith)) {
+        // Usernames are stored in lowercase, so convert to lowercase for lookup
+        const usernameToLookup = emailToSignInWith.toLowerCase();
+
         const usersRef = firestore().collection('users');
-        const querySnapshot = await usersRef.where('username', '==', identifier).limit(1).get();
+        const querySnapshot = await usersRef.where('username', '==', usernameToLookup).limit(1).get();
 
         if (querySnapshot.empty) {
-          setErrors({ identifier: t('validation.invalidCredentials') });
+          setErrors({ identifier: t('validation.usernameNotFound') });
           setLoading(false);
           return;
         }

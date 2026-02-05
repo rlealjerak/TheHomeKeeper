@@ -1,74 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
 import EmailVerification from '../screens/EmailVerification';
 import { colors } from '../theme/colors';
 
-export default function RootNavigator(){
-    const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [emailVerified, setEmailVerified] = useState(false);
-    const [authProvider, setAuthProvider] = useState<string | null>(null);
+// Check if user signed in via Google (using Firebase Auth provider data, not Firestore)
+const isGoogleUser = (user: FirebaseAuthTypes.User | null): boolean => {
+    if (!user) return false;
+    return user.providerData.some(provider => provider.providerId === 'google.com');
+};
+
+export default function RootNavigator() {
+    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+    const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = auth().onAuthStateChanged(async (currentUser) => {
+        const unsubscribe = auth().onAuthStateChanged((currentUser) => {
             setUser(currentUser);
-
-            if (currentUser) {
-                // Check email verification status
-                setEmailVerified(currentUser.emailVerified);
-
-                // Get auth provider from Firestore to know if user signed up via Google
-                try {
-                    const userDoc = await firestore()
-                        .collection('users')
-                        .doc(currentUser.uid)
-                        .get();
-
-                    if (userDoc.exists) {
-                        const userData = userDoc.data();
-                        setAuthProvider(userData?.authProvider || 'password');
-                    } else {
-                        setAuthProvider('password');
-                    }
-                } catch (error) {
-                    setAuthProvider('password');
-                }
-            } else {
-                setEmailVerified(false);
-                setAuthProvider(null);
+            if (initializing) {
+                setInitializing(false);
             }
-
-            setLoading(false);
         });
 
         return unsubscribe;
-    }, []);
+    }, [initializing]);
 
-    // Periodically check if email has been verified (for email/password users)
+    // Periodically check if email has been verified (for email/password users waiting on verification screen)
     useEffect(() => {
-        if (!user || emailVerified || authProvider === 'google') return;
+        // Only run this check if user exists, is NOT a Google user, and email is NOT verified
+        if (!user || isGoogleUser(user) || user.emailVerified) return;
 
         const interval = setInterval(async () => {
             try {
                 await user.reload();
+                // Force re-render by getting fresh user reference
                 const refreshedUser = auth().currentUser;
                 if (refreshedUser?.emailVerified) {
-                    setEmailVerified(true);
+                    // Trigger state update to re-render with verified status
+                    setUser({ ...refreshedUser } as FirebaseAuthTypes.User);
                 }
             } catch (error) {
                 // Silent fail - user might have signed out
             }
-        }, 5000); // Check every 5 seconds
+        }, 3000); // Check every 3 seconds
 
         return () => clearInterval(interval);
-    }, [user, emailVerified, authProvider]);
+    }, [user]);
 
-    if (loading) {
+    if (initializing) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -76,31 +58,23 @@ export default function RootNavigator(){
         );
     }
 
-    // Determine which screen to show
-    const renderContent = () => {
-        if (!user) {
-            // Not logged in - show auth screens
-            return <AuthNavigator />;
-        }
+    // Not logged in - show auth screens
+    if (!user) {
+        return (
+            <NavigationContainer>
+                <AuthNavigator />
+            </NavigationContainer>
+        );
+    }
 
-        // User is logged in
-        // Google users are pre-verified, skip verification screen
-        if (authProvider === 'google') {
-            return <AppNavigator />;
-        }
-
-        // Email/password users must verify their email
-        if (!emailVerified) {
-            return <EmailVerification />;
-        }
-
-        // Verified user - show main app
-        return <AppNavigator />;
-    };
+    // User is logged in - check verification status
+    // Google users are pre-verified, skip verification screen
+    const isGoogle = isGoogleUser(user);
+    const needsVerification = !isGoogle && !user.emailVerified;
 
     return (
         <NavigationContainer>
-            {renderContent()}
+            {needsVerification ? <EmailVerification /> : <AppNavigator />}
         </NavigationContainer>
     );
 }

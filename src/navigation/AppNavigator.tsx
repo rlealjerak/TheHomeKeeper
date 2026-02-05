@@ -13,6 +13,7 @@ import AddItem from '../screens/AddItem';
 import Settings from '../screens/Settings';
 import EditProfile from '../screens/EditProfile';
 import MaintenanceHistory from '../screens/MaintenanceHistory';
+import AllMaintenanceHistory from '../screens/AllMaintenanceHistory';
 
 const Stack = createNativeStackNavigator();
 
@@ -171,6 +172,15 @@ export default function AppNavigator() {
         options={{
           headerShown: true,
           headerTitle: t('history.title'),
+          headerBackTitle: t('navigation.back'),
+        }}
+      />
+      <Stack.Screen
+        name="AllMaintenanceHistory"
+        component={AllMaintenanceHistory}
+        options={{
+          headerShown: true,
+          headerTitle: t('history.allHistory'),
           headerBackTitle: t('navigation.back'),
         }}
       />

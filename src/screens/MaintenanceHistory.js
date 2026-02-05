@@ -12,10 +12,7 @@ import dayjs from 'dayjs';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useRoute } from '@react-navigation/native';
-import {
-  getMaintenanceHistory,
-  calculateAverageFrequency,
-} from '../services/maintenanceHistory';
+import { getMaintenanceHistory } from '../services/maintenanceHistory';
 import HistoryCard from '../components/HistoryCard';
 
 // Screen showing maintenance history for a specific item
@@ -27,7 +24,6 @@ const MaintenanceHistory = () => {
 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [averageFrequency, setAverageFrequency] = useState(null);
 
   useEffect(() => {
     loadHistory();
@@ -38,7 +34,6 @@ const MaintenanceHistory = () => {
     const result = await getMaintenanceHistory(item.id);
     if (result.success) {
       setHistory(result.history);
-      setAverageFrequency(calculateAverageFrequency(result.history));
     }
     setLoading(false);
   };
@@ -66,6 +61,7 @@ const MaintenanceHistory = () => {
     },
     statItem: {
       alignItems: 'center',
+      flex: 1,
     },
     statValue: {
       fontSize: 28,
@@ -174,19 +170,12 @@ const MaintenanceHistory = () => {
           </View>
         </View>
 
-        {/* Stats Card */}
+        {/* Stats Card - Only Total Completions and Days Until Next */}
         <View style={styles.statsCard}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{totalCompletions}</Text>
               <Text style={styles.statLabel}>{t('history.totalCompletions')}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {averageFrequency || '—'}
-              </Text>
-              <Text style={styles.statLabel}>{t('history.averageDays')}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.statItem}>
@@ -227,7 +216,6 @@ const MaintenanceHistory = () => {
                 record={record}
                 isFirst={index === 0}
                 onNoteUpdated={(recordId, newNote) => {
-                  // Update local state to reflect the change immediately
                   setHistory(prev =>
                     prev.map(h =>
                       h.id === recordId ? { ...h, notes: newNote } : h
