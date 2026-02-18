@@ -9,13 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/Button';
 import { sendEmailVerification } from '../services/emailVerification';
 
 // Screen shown when user is logged in but email is not verified
-const EmailVerification = () => {
+const EmailVerification = ({ onVerified }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [sending, setSending] = useState(false);
@@ -42,14 +43,16 @@ const EmailVerification = () => {
     setSending(false);
 
     if (result.success) {
-      setCooldown(60); // 60 second cooldown
+      setCooldown(60);
       Alert.alert(
         t('emailVerification.emailSent'),
         t('emailVerification.checkInbox')
       );
     } else if (result.alreadyVerified) {
-      // Refresh auth state
-      await auth().currentUser?.reload();
+      // Email is already verified, trigger navigation
+      if (onVerified) {
+        onVerified();
+      }
     } else {
       Alert.alert(t('common.error'), t('emailVerification.sendFailed'));
     }
@@ -61,15 +64,34 @@ const EmailVerification = () => {
 
     setChecking(true);
     try {
+      // Reload user to get fresh data from Firebase
       await auth().currentUser?.reload();
       const updatedUser = auth().currentUser;
 
+      if (__DEV__) {
+        console.log('[EmailVerification] After reload, emailVerified:', updatedUser?.emailVerified);
+      }
+
       if (updatedUser?.emailVerified) {
-        // Auth state listener in RootNavigator will handle navigation
-        Alert.alert(
-          t('emailVerification.verified'),
-          t('emailVerification.verifiedMessage')
-        );
+        // Update Firestore
+        try {
+          await firestore().collection('users').doc(updatedUser.uid).update({
+            emailVerified: true,
+          });
+        } catch (e) {
+          // Non-critical
+        }
+
+        // Notify parent that verification is complete
+        if (onVerified) {
+          onVerified();
+        } else {
+          // Fallback: Show success and the polling will catch it
+          Alert.alert(
+            t('emailVerification.verified'),
+            t('emailVerification.verifiedMessage')
+          );
+        }
       } else {
         Alert.alert(
           t('emailVerification.notVerified'),
@@ -77,9 +99,13 @@ const EmailVerification = () => {
         );
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('[EmailVerification] Error:', error);
+      }
       Alert.alert(t('common.error'), t('validation.unknownError'));
+    } finally {
+      setChecking(false);
     }
-    setChecking(false);
   };
 
   // Sign out and go back to auth screens
@@ -138,12 +164,6 @@ const EmailVerification = () => {
     },
     secondaryButton: {
       marginTop: 12,
-    },
-    cooldownText: {
-      fontSize: 14,
-      color: colors.textMuted,
-      textAlign: 'center',
-      marginTop: 8,
     },
     signOutContainer: {
       paddingVertical: 24,

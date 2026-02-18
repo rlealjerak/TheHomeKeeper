@@ -17,13 +17,13 @@ import AllMaintenanceHistory from '../screens/AllMaintenanceHistory';
 
 const Stack = createNativeStackNavigator();
 
+// Main app navigator - handles onboarding, dashboard, and other authenticated screens
 export default function AppNavigator() {
   const { t } = useTranslation();
   const [uid, setUid] = useState<string | null>(null);
   const [hasItems, setHasItems] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
   const [itemsLoaded, setItemsLoaded] = useState(false);
-  // Track if user just completed onboarding (to skip IntroScreen and go to AddItem)
   const [comingFromOnboarding, setComingFromOnboarding] = useState(false);
 
   // Get uid
@@ -34,12 +34,9 @@ export default function AppNavigator() {
     return unsub;
   }, []);
 
-  // Check if user has completed onboarding (stored per-account in Firestore)
+  // Check if user has completed onboarding
   useEffect(() => {
-    if (!uid) {
-      // Wait for uid before checking onboarding status
-      return;
-    }
+    if (!uid) return;
 
     const checkOnboarding = async () => {
       try {
@@ -48,22 +45,21 @@ export default function AppNavigator() {
           const userData = userDoc.data();
           setHasOnboarded(userData?.hasOnboarded === true);
         } else {
-          // User document doesn't exist yet, show onboarding
           setHasOnboarded(false);
         }
       } catch (error) {
+        if (__DEV__) {
+          console.log('[AppNavigator] Error checking onboarding:', error);
+        }
         setHasOnboarded(false);
       }
     };
     checkOnboarding();
   }, [uid]);
 
-  // Listen for items - wait for uid before marking as loaded
+  // Listen for items
   useEffect(() => {
-    if (!uid) {
-      // Don't mark as loaded until we have a uid and can check Firestore
-      return;
-    }
+    if (!uid) return;
 
     const unsubscribe = firestore()
       .collection('items')
@@ -74,6 +70,9 @@ export default function AppNavigator() {
           setItemsLoaded(true);
         },
         error => {
+          if (__DEV__) {
+            console.log('[AppNavigator] Error loading items:', error);
+          }
           setHasItems(false);
           setItemsLoaded(true);
         }
@@ -82,8 +81,7 @@ export default function AppNavigator() {
     return unsubscribe;
   }, [uid]);
 
-  // Complete onboarding callback - saves to Firestore (per-account)
-  // Sets comingFromOnboarding flag so user goes directly to AddItem (not IntroScreen)
+  // Complete onboarding
   const handleOnboardingComplete = async () => {
     try {
       if (uid) {
@@ -91,15 +89,18 @@ export default function AppNavigator() {
           hasOnboarded: true,
         });
       }
-      setComingFromOnboarding(true); // Flag to skip IntroScreen
+      setComingFromOnboarding(true);
       setHasOnboarded(true);
     } catch (error) {
+      if (__DEV__) {
+        console.log('[AppNavigator] Error saving onboarding status:', error);
+      }
       setComingFromOnboarding(true);
-      setHasOnboarded(true); // Still proceed even if save fails
+      setHasOnboarded(true);
     }
   };
 
-  // Wait for onboarding check only (not items)
+  // Loading states
   if (hasOnboarded === null) {
     return (
       <View style={styles.loadingContainer}>
@@ -108,12 +109,10 @@ export default function AppNavigator() {
     );
   }
 
-  // Show onboarding if user hasn't completed it
   if (!hasOnboarded) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  // Show loading while checking items (but only briefly)
   if (!itemsLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -122,10 +121,7 @@ export default function AppNavigator() {
     );
   }
 
-  // Determine initial route:
-  // - If user has items → ItemDashboard
-  // - If coming from onboarding (first-time) → AddItem directly (skip IntroScreen)
-  // - If returning user with 0 items → Intro (Welcome screen)
+  // Determine initial route
   const getInitialRoute = () => {
     if (hasItems) return 'ItemDashboard';
     if (comingFromOnboarding) return 'AddItem';

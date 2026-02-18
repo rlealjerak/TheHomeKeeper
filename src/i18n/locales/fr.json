@@ -62,6 +62,7 @@
     "enterLastName": "Veuillez entrer votre nom.",
     "chooseUsername": "Veuillez choisir un nom d'utilisateur.",
     "enterEmail": "Veuillez entrer votre e-mail.",
+    "enterEmailOrUsername": "Veuillez entrer votre e-mail ou utilisateur.",
     "enterPassword": "Veuillez entrer votre mot de passe.",
     "createPasswordRequired": "Veuillez créer un mot de passe.",
     "invalidEmail": "Veuillez entrer une adresse e-mail valide.",
@@ -70,6 +71,9 @@
     "emailInUse": "Cette adresse e-mail est déjà utilisée !",
     "invalidCredentials": "E-mail ou mot de passe invalide. Veuillez réessayer.",
     "usernameNotFound": "Nom d'utilisateur non trouvé. Veuillez vérifier et réessayer.",
+    "wrongPassword": "Mot de passe incorrect. Veuillez réessayer.",
+    "userDisabled": "Ce compte a été désactivé.",
+    "tooManyAttempts": "Trop de tentatives échouées. Veuillez réessayer plus tard.",
     "networkError": "Erreur réseau. Veuillez vérifier votre connexion internet.",
     "unknownError": "Une erreur inattendue s'est produite. Veuillez réessayer.",
     "validatingEmail": "Validation de l'E-mail...",
@@ -84,6 +88,7 @@
     "newPasswordWeak": "Le nouveau mot de passe est trop faible.",
     "recentLoginRequired": "Veuillez vous déconnecter et vous reconnecter avant cette action.",
     "googleAuthError": "Échec de la connexion avec Google. Veuillez réessayer.",
+    "useGoogleSignIn": "Ce compte utilise la connexion Google. Veuillez vous connecter avec Google.",
     "appleAuthError": "Échec de la connexion avec Apple. Veuillez réessayer.",
     "authCancelled": "La connexion a été annulée.",
     "appleNotAvailable": "La connexion avec Apple n'est pas disponible sur cet appareil.",
@@ -198,7 +203,11 @@
     "logoutError": "Une erreur s'est produite lors de la déconnexion. Veuillez réessayer.",
     "permissionDenied": "Permission Refusée",
     "enableNotifications": "Veuillez activer les notifications dans les paramètres de votre appareil pour recevoir des rappels d'entretien.",
-    "notificationError": "Échec de la mise à jour des paramètres de notification."
+    "notificationError": "Échec de la mise à jour des paramètres de notification.",
+    "legal": "Mentions Légales",
+    "privacyPolicy": "Politique de Confidentialité",
+    "termsOfService": "Conditions d'Utilisation",
+    "version": "Version"
   },
 
   "editProfile": {

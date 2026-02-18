@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -129,6 +129,97 @@ const AddItemScreen = () => {
     });
   };
 
+  // DatePicker styles for dark mode support
+  const datePickerStyles = useMemo(() => ({
+    // Day labels (the numbers in the calendar)
+    day_label: {
+      color: colors.text,
+    },
+    // Today's date styling
+    today: {
+      backgroundColor: colors.primaryLight,
+      borderRadius: 8,
+    },
+    today_label: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    // Selected date styling
+    selected: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+    },
+    selected_label: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    // Days outside current month
+    outside_label: {
+      color: colors.textMuted,
+    },
+    // Disabled days
+    disabled_label: {
+      color: colors.textMuted,
+      opacity: 0.5,
+    },
+    // Header month/year selectors
+    month_selector_label: {
+      color: colors.text,
+      fontWeight: '600',
+      fontSize: 16,
+    },
+    year_selector_label: {
+      color: colors.text,
+      fontWeight: '600',
+      fontSize: 16,
+    },
+    // Weekday labels (Mon, Tue, etc.)
+    weekday_label: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      textTransform: 'uppercase',
+    },
+    // Month grid items
+    month: {
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+    },
+    month_label: {
+      color: colors.text,
+    },
+    selected_month: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    selected_month_label: {
+      color: '#FFFFFF',
+    },
+    // Year grid items
+    year: {
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+    },
+    year_label: {
+      color: colors.text,
+    },
+    selected_year: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    selected_year_label: {
+      color: '#FFFFFF',
+    },
+    active_year: {
+      backgroundColor: colors.primaryLight,
+      borderColor: colors.primaryLight,
+    },
+    active_year_label: {
+      color: colors.primary,
+    },
+  }), [colors]);
+
   // Dynamic styles based on theme
   const styles = StyleSheet.create({
     container: {
@@ -171,6 +262,14 @@ const AddItemScreen = () => {
     },
     submitButton: {
       marginTop: 8,
+    },
+    datePickerContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
   });
 
@@ -223,17 +322,20 @@ const AddItemScreen = () => {
           </View>
 
           {showDatePicker && (
-            <DatePicker
-              mode="single"
-              date={lastMaintenanceDate}
-              onChange={event => {
-                const date = event.date instanceof Date
-                  ? event.date
-                  : dayjs(event.date).toDate();
-                setLastMaintenanceDate(date);
-                setShowDatePicker(false);
-              }}
-            />
+            <View style={styles.datePickerContainer}>
+              <DatePicker
+                mode="single"
+                date={lastMaintenanceDate}
+                onChange={event => {
+                  const date = event.date instanceof Date
+                    ? event.date
+                    : dayjs(event.date).toDate();
+                  setLastMaintenanceDate(date);
+                  setShowDatePicker(false);
+                }}
+                styles={datePickerStyles}
+              />
+            </View>
           )}
 
           <TextInput

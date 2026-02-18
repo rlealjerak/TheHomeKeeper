@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Linking,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -231,6 +232,28 @@ const Settings = ({ navigation }) => {
     },
     modalCloseButton: {
       marginTop: 16,
+    },
+    legalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 14,
+    },
+    legalRowBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    legalRowText: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    versionText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: 8,
+      marginBottom: 16,
     },
   });
   const [uid, setUid] = useState(null);
@@ -551,6 +574,27 @@ const Settings = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Legal Section */}
+      <View style={styles.settingsCard}>
+        <Text style={styles.sectionHeader}>{t('settings.legal')}</Text>
+
+        <TouchableOpacity
+          style={[styles.legalRow, styles.legalRowBorder]}
+          onPress={() => Linking.openURL('https://thehomekeeper-175e2.web.app/privacy-policy')}
+        >
+          <Text style={styles.legalRowText}>{t('settings.privacyPolicy')}</Text>
+          <Icon name="external-link" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.legalRow}
+          onPress={() => Linking.openURL('https://thehomekeeper-175e2.web.app/terms-of-service')}
+        >
+          <Text style={styles.legalRowText}>{t('settings.termsOfService')}</Text>
+          <Icon name="external-link" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
       {/* Edit Profile Button */}
       <Button
         title={t('settings.editProfile')}
@@ -561,6 +605,9 @@ const Settings = ({ navigation }) => {
 
       {/* Logout Button */}
       <Button title={t('settings.logout')} onPress={handleLogout} />
+
+      {/* Version */}
+      <Text style={styles.versionText}>{t('settings.version')} 1.0.0</Text>
       </ScrollView>
 
       {/* Language Selection Modal */}

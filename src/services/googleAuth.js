@@ -3,6 +3,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { Platform } from 'react-native';
 import { logError } from './errorLogging';
+import { normalizeUsername, isUsernameTaken } from './usernameService';
 
 // Configure Google Sign-In - call this once at app startup
 export const configureGoogleSignIn = () => {
@@ -10,8 +11,6 @@ export const configureGoogleSignIn = () => {
   const webClientId = '999583790732-321pt9to5398ejrahl1udnlo3kvs3csj.apps.googleusercontent.com';
 
   // iOS Client ID from GoogleService-Info.plist CLIENT_ID field
-  // Format: {ID}.apps.googleusercontent.com (NOT reversed)
-  // The reversed format (com.googleusercontent.apps.{ID}) is only for URL schemes in Info.plist
   const iosClientId = '999583790732-m1tbsm5p7o5nougdalg5hc58e5b0ptig.apps.googleusercontent.com';
 
   const config = {
@@ -24,12 +23,20 @@ export const configureGoogleSignIn = () => {
     config.iosClientId = iosClientId;
   }
 
+  if (__DEV__) {
+    console.log('[GoogleAuth] Configuring for', Platform.OS);
+  }
+
   GoogleSignin.configure(config);
 };
 
 // Sign in with Google and authenticate with Firebase
 export const signInWithGoogle = async () => {
   try {
+    if (__DEV__) {
+      console.log('[GoogleAuth] Starting sign-in flow...');
+    }
+
     // Check Play Services only on Android
     if (Platform.OS === 'android') {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -42,11 +49,17 @@ export const signInWithGoogle = async () => {
     const idToken = signInResult.data?.idToken || signInResult.idToken;
 
     if (!idToken) {
+      if (__DEV__) {
+        console.error('[GoogleAuth] No ID token received');
+      }
       logError(new Error('No ID token in Google Sign-In result'), {
-        signInResult: JSON.stringify(signInResult),
-        platform: Platform.OS
+        platform: Platform.OS,
       });
       throw new Error('No ID token found');
+    }
+
+    if (__DEV__) {
+      console.log('[GoogleAuth] Got ID token, signing in to Firebase...');
     }
 
     // Create a Google credential with the token
@@ -55,19 +68,29 @@ export const signInWithGoogle = async () => {
     // Sign-in the user with the credential
     const userCredential = await auth().signInWithCredential(googleCredential);
 
+    if (__DEV__) {
+      console.log('[GoogleAuth] Firebase sign-in successful:', userCredential.user.uid);
+    }
+
     // Check if this is a new user and create their Firestore profile
     if (userCredential.additionalUserInfo?.isNewUser) {
+      if (__DEV__) {
+        console.log('[GoogleAuth] New user, creating profile...');
+      }
       await createUserProfile(userCredential.user);
     }
 
     return { success: true, user: userCredential.user };
   } catch (error) {
+    if (__DEV__) {
+      console.error('[GoogleAuth] Error:', error.code, error.message);
+    }
     logError(error, { context: 'signInWithGoogle', platform: Platform.OS });
     return handleGoogleError(error);
   }
 };
 
-// Create user profile in Firestore for new OAuth users
+// Create user profile in Firestore for new Google users
 const createUserProfile = async (user) => {
   try {
     const nameParts = (user.displayName || '').split(' ');
@@ -76,21 +99,21 @@ const createUserProfile = async (user) => {
 
     // Generate a username from email
     const emailUsername = (user.email || '').split('@')[0];
-    const baseUsername = emailUsername.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const baseUsernameRaw = emailUsername.replace(/[^a-zA-Z0-9]/g, '');
+    const baseUsername = normalizeUsername(baseUsernameRaw) || `user${Math.floor(Math.random() * 10000)}`;
 
     // Check if username exists and add random suffix if needed
     let username = baseUsername;
     let attempts = 0;
     while (attempts < 5) {
-      const existing = await firestore()
-        .collection('users')
-        .where('username', '==', username)
-        .limit(1)
-        .get();
-
-      if (existing.empty) break;
+      const taken = await isUsernameTaken(username);
+      if (!taken) break;
       username = `${baseUsername}${Math.floor(Math.random() * 1000)}`;
       attempts++;
+    }
+
+    if (__DEV__) {
+      console.log('[GoogleAuth] Creating profile with username:', username);
     }
 
     await firestore().collection('users').doc(user.uid).set({
@@ -104,9 +127,16 @@ const createUserProfile = async (user) => {
       hasOnboarded: false,
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
+
+    if (__DEV__) {
+      console.log('[GoogleAuth] Profile created successfully');
+    }
   } catch (error) {
-    // Profile creation failed - log but don't block auth
+    if (__DEV__) {
+      console.error('[GoogleAuth] Failed to create profile:', error);
+    }
     logError(error, { context: 'createUserProfile' });
+    // Don't throw - profile creation failure shouldn't block auth
   }
 };
 
@@ -124,8 +154,10 @@ const handleGoogleError = (error) => {
     // iOS specific: User cancelled
     errorMessage = 'cancelled';
   } else if (error.message?.includes('DEVELOPER_ERROR')) {
-    // Configuration issue - SHA-1 or client ID mismatch
     errorMessage = 'configurationError';
+    if (__DEV__) {
+      console.error('[GoogleAuth] DEVELOPER_ERROR - Check SHA-1 fingerprint and client IDs');
+    }
   }
 
   return { success: false, error: errorMessage, originalError: error };

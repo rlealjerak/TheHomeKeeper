@@ -15,8 +15,9 @@ import { useTranslation } from 'react-i18next';
 import { validateEmailFormat, validateEmailDomain } from '../utils/emailValidation';
 import { signInWithGoogle } from '../services/googleAuth';
 import { sendEmailVerification } from '../services/emailVerification';
+import { normalizeUsername, isUsernameTaken } from '../services/usernameService';
 
-// New redesigned components
+// Redesigned components
 import AuthScreenWrapper from '../components/AuthScreenWrapper';
 import AnimatedLogo from '../components/AnimatedLogo';
 import FloatingLabelInput from '../components/FloatingLabelInput';
@@ -24,6 +25,7 @@ import GradientButton from '../components/GradientButton';
 import AuthDivider from '../components/AuthDivider';
 import { SocialButton } from '../components/SocialButton';
 
+// Sign Up screen - handles new user registration
 const SignUpScreen = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -38,7 +40,7 @@ const SignUpScreen = () => {
   const [validatingEmail, setValidatingEmail] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Staggered animation for form elements
+  // Animation for form elements
   const formOpacity = useRef(new Animated.Value(0)).current;
   const formTranslateY = useRef(new Animated.Value(30)).current;
 
@@ -64,14 +66,20 @@ const SignUpScreen = () => {
     if (googleLoading || loading || validatingEmail) return;
     setGoogleLoading(true);
 
-    const result = await signInWithGoogle();
+    try {
+      const result = await signInWithGoogle();
 
-    if (!result.success) {
-      if (result.error !== 'cancelled') {
+      if (!result.success && result.error !== 'cancelled') {
         Alert.alert(t('common.error'), t('validation.googleAuthError'));
       }
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[SignUp] Google sign-in error:', error);
+      }
+      Alert.alert(t('common.error'), t('validation.googleAuthError'));
+    } finally {
+      setGoogleLoading(false);
     }
-    setGoogleLoading(false);
   };
 
   // Clear error when field changes
@@ -103,16 +111,19 @@ const SignUpScreen = () => {
     }
   };
 
-  // Function to handle sign up with email and password
+  // Handle sign up with email and password
   const handleSignUp = async () => {
     // Clear previous errors
     setErrors({});
 
-    // Validation
+    // Basic validation
     const newErrors = {};
     if (!name.trim()) newErrors.name = t('validation.enterFirstName');
     if (!lastName.trim()) newErrors.lastName = t('validation.enterLastName');
-    if (!username.trim()) newErrors.username = t('validation.chooseUsername');
+
+    const usernameNormalized = normalizeUsername(username);
+    if (!usernameNormalized) newErrors.username = t('validation.chooseUsername');
+
     if (!email.trim()) newErrors.email = t('validation.enterEmail');
     if (!password.trim()) newErrors.password = t('validation.createPasswordRequired');
     if (password.trim() && password.length < 6) newErrors.password = t('validation.weakPassword');
@@ -149,53 +160,68 @@ const SignUpScreen = () => {
 
     try {
       // Check if username is already taken
-      const usersRef = firestore().collection('users');
-      const usernameQuery = await usersRef.where('username', '==', username).limit(1).get();
-
-      if (!usernameQuery.empty) {
+      const taken = await isUsernameTaken(usernameNormalized);
+      if (taken) {
         setErrors({ username: t('validation.usernameTaken') });
         setLoading(false);
         return;
       }
 
-      // Create user account
-      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      // Create user account in Firebase Auth
+      const userCredential = await auth().createUserWithEmailAndPassword(email.trim(), password);
       const uid = userCredential.user.uid;
+
+      if (__DEV__) {
+        console.log('[SignUp] User created:', uid);
+      }
 
       // Store user information in Firestore
       await firestore().collection('users').doc(uid).set({
-        name,
-        lastName,
-        username,
-        email,
+        name: name.trim(),
+        lastName: lastName.trim(),
+        username: usernameNormalized,
+        email: email.trim().toLowerCase(),
         authProvider: 'password',
         emailVerified: false,
         hasOnboarded: false,
-        createdAt: new Date(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
+
+      if (__DEV__) {
+        console.log('[SignUp] User profile created in Firestore');
+      }
 
       // Send email verification
       const verificationResult = await sendEmailVerification();
       if (verificationResult.success && !verificationResult.alreadyVerified) {
-        Alert.alert(
-          t('validation.verifyEmailTitle'),
-          t('validation.verifyEmailMessage'),
-          [{ text: t('common.ok') }]
-        );
+        if (__DEV__) {
+          console.log('[SignUp] Verification email sent');
+        }
       }
 
       // Navigation handled by RootNavigator's onAuthStateChanged
     } catch (error) {
-      let errorMessage = t('validation.unknownError');
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = t('validation.emailInUse');
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t('validation.invalidEmail');
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = t('validation.weakPassword');
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = t('validation.networkError');
+      if (__DEV__) {
+        console.error('[SignUp] Error:', error.code, error.message);
       }
+
+      let errorMessage = t('validation.unknownError');
+
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = t('validation.emailInUse');
+          break;
+        case 'auth/invalid-email':
+          errorMessage = t('validation.invalidEmail');
+          break;
+        case 'auth/weak-password':
+          errorMessage = t('validation.weakPassword');
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = t('validation.networkError');
+          break;
+      }
+
       Alert.alert(t('validation.signUpError'), errorMessage);
     } finally {
       setLoading(false);

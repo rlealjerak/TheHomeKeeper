@@ -62,6 +62,7 @@
     "enterLastName": "Por favor ingresa tu apellido.",
     "chooseUsername": "Por favor elige un nombre de usuario.",
     "enterEmail": "Por favor ingresa tu correo.",
+    "enterEmailOrUsername": "Por favor ingresa tu correo o usuario.",
     "enterPassword": "Por favor ingresa tu contraseña.",
     "createPasswordRequired": "Por favor crea una contraseña.",
     "invalidEmail": "Por favor ingresa un correo válido.",
@@ -70,6 +71,9 @@
     "emailInUse": "¡Este correo ya está registrado!",
     "invalidCredentials": "Correo o contraseña inválidos. Por favor intenta de nuevo.",
     "usernameNotFound": "Usuario no encontrado. Por favor verifica e intenta de nuevo.",
+    "wrongPassword": "Contraseña incorrecta. Por favor intenta de nuevo.",
+    "userDisabled": "Esta cuenta ha sido deshabilitada.",
+    "tooManyAttempts": "Demasiados intentos fallidos. Por favor intenta más tarde.",
     "networkError": "Error de red. Por favor verifica tu conexión a internet.",
     "unknownError": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
     "validatingEmail": "Validando Correo...",
@@ -84,6 +88,7 @@
     "newPasswordWeak": "La contraseña nueva es muy débil.",
     "recentLoginRequired": "Por favor cierra sesión e inicia sesión de nuevo antes de esta acción.",
     "googleAuthError": "Error al iniciar sesión con Google. Por favor intenta de nuevo.",
+    "useGoogleSignIn": "Esta cuenta usa inicio de sesión con Google. Por favor inicia sesión con Google.",
     "appleAuthError": "Error al iniciar sesión con Apple. Por favor intenta de nuevo.",
     "authCancelled": "El inicio de sesión fue cancelado.",
     "appleNotAvailable": "Inicio de sesión con Apple no está disponible en este dispositivo.",
@@ -198,7 +203,11 @@
     "logoutError": "Ocurrió un error al cerrar sesión. Por favor intenta de nuevo.",
     "permissionDenied": "Permiso Denegado",
     "enableNotifications": "Por favor habilita las notificaciones en la configuración de tu dispositivo para recibir recordatorios de mantenimiento.",
-    "notificationError": "Error al actualizar la configuración de notificaciones."
+    "notificationError": "Error al actualizar la configuración de notificaciones.",
+    "legal": "Legal",
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfService": "Términos de Servicio",
+    "version": "Versión"
   },
 
   "editProfile": {

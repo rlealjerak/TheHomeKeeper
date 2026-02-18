@@ -1,5 +1,4 @@
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -13,8 +12,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { signInWithGoogle } from '../services/googleAuth';
+import { findEmailByUsername } from '../services/usernameService';
 
-// New redesigned components
+// Redesigned components
 import AuthScreenWrapper from '../components/AuthScreenWrapper';
 import AnimatedLogo from '../components/AnimatedLogo';
 import FloatingLabelInput from '../components/FloatingLabelInput';
@@ -22,6 +22,7 @@ import GradientButton from '../components/GradientButton';
 import AuthDivider from '../components/AuthDivider';
 import { SocialButton } from '../components/SocialButton';
 
+// Sign In screen
 const SignIn = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -32,7 +33,7 @@ const SignIn = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Staggered animation for form elements
+  // Animation
   const formOpacity = useRef(new Animated.Value(0)).current;
   const formTranslateY = useRef(new Animated.Value(30)).current;
 
@@ -51,27 +52,12 @@ const SignIn = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
   }, []);
 
-  // Handle Google Sign-In
-  const handleGoogleSignIn = async () => {
-    if (googleLoading || loading) return;
-    setGoogleLoading(true);
-
-    const result = await signInWithGoogle();
-
-    if (!result.success) {
-      if (result.error !== 'cancelled') {
-        Alert.alert(t('common.error'), t('validation.googleAuthError'));
-      }
-    }
-    setGoogleLoading(false);
-  };
-
-  // Validate if input looks like an email
+  // Check if input looks like an email
   const isEmail = (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 
-  // Clear error when user starts typing
   const handleIdentifierChange = (text) => {
     setIdentifier(text);
     if (errors.identifier) {
@@ -86,21 +72,19 @@ const SignIn = () => {
     }
   };
 
+  // Handle sign in
   const handleSignIn = async () => {
-    // Clear previous errors
     setErrors({});
 
-    // Validation
-    const newErrors = {};
-    if (!identifier.trim()) {
-      newErrors.identifier = t('validation.enterEmail');
-    }
-    if (!password.trim()) {
-      newErrors.password = t('validation.enterPassword');
-    }
+    const trimmedIdentifier = identifier.trim();
+    const trimmedPassword = password;
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!trimmedIdentifier) {
+      setErrors({ identifier: t('validation.enterEmailOrUsername') });
+      return;
+    }
+    if (!trimmedPassword) {
+      setErrors({ password: t('validation.enterPassword') });
       return;
     }
 
@@ -108,52 +92,141 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      let emailToSignInWith = identifier.trim();
+      let emailToSignInWith = trimmedIdentifier;
+      let authProvider = null;
 
-      // If the identifier is not an email, assume it's a username and look up the email
-      if (!isEmail(emailToSignInWith)) {
-        // Usernames are stored in lowercase, so convert to lowercase for lookup
-        const usernameToLookup = emailToSignInWith.toLowerCase();
+      // Determine if input is email or username
+      if (isEmail(trimmedIdentifier)) {
+        // Input is an email
+        emailToSignInWith = trimmedIdentifier.toLowerCase();
+        if (__DEV__) {
+          console.log('[SignIn] Using email:', emailToSignInWith);
+        }
+      } else {
+        // Input is a username - look up the email
+        if (__DEV__) {
+          console.log('[SignIn] Looking up username:', trimmedIdentifier);
+        }
 
-        const usersRef = firestore().collection('users');
-        const querySnapshot = await usersRef.where('username', '==', usernameToLookup).limit(1).get();
+        const userLookup = await findEmailByUsername(trimmedIdentifier);
 
-        if (querySnapshot.empty) {
+        if (__DEV__) {
+          console.log('[SignIn] Username lookup result:', JSON.stringify(userLookup));
+        }
+
+        if (!userLookup.found) {
           setErrors({ identifier: t('validation.usernameNotFound') });
           setLoading(false);
           return;
         }
 
-        const userData = querySnapshot.docs[0].data();
-        if (!userData.email) {
-          setErrors({ identifier: t('validation.invalidCredentials') });
+        if (!userLookup.email) {
+          Alert.alert(
+            t('common.error'),
+            'Account found but no email associated. Please sign in with Google.'
+          );
           setLoading(false);
           return;
         }
-        emailToSignInWith = userData.email;
+
+        emailToSignInWith = userLookup.email;
+        authProvider = userLookup.authProvider;
+
+        if (__DEV__) {
+          console.log('[SignIn] Found email:', emailToSignInWith);
+          console.log('[SignIn] Auth provider:', authProvider);
+        }
+
+        // Check if this is a Google-only account
+        if (authProvider === 'google') {
+          Alert.alert(
+            t('common.error'),
+            t('validation.useGoogleSignIn')
+          );
+          setLoading(false);
+          return;
+        }
       }
 
-      await auth().signInWithEmailAndPassword(emailToSignInWith, password);
-      // Navigation handled by RootNavigator's onAuthStateChanged
+      // Attempt Firebase Auth sign-in
+      if (__DEV__) {
+        console.log('[SignIn] Attempting Firebase sign-in with:', emailToSignInWith);
+      }
+
+      await auth().signInWithEmailAndPassword(emailToSignInWith, trimmedPassword);
+
+      if (__DEV__) {
+        console.log('[SignIn] Success!');
+      }
     } catch (error) {
+      if (__DEV__) {
+        console.error('[SignIn] Firebase error:', error.code, error.message);
+      }
+
       let errorMessage = t('validation.unknownError');
+
       switch (error.code) {
         case 'auth/invalid-email':
+          errorMessage = t('validation.invalidEmail');
+          break;
         case 'auth/user-disabled':
+          errorMessage = t('validation.userDisabled');
+          break;
         case 'auth/user-not-found':
+          errorMessage = t('validation.userNotFound');
+          break;
         case 'auth/wrong-password':
         case 'auth/invalid-credential':
-          errorMessage = t('validation.invalidCredentials');
+          // Check if this might be a Google-only account
+          try {
+            const methods = await auth().fetchSignInMethodsForEmail(identifier.trim().toLowerCase());
+            if (__DEV__) {
+              console.log('[SignIn] Sign-in methods for email:', methods);
+            }
+            if (methods.includes('google.com') && !methods.includes('password')) {
+              errorMessage = t('validation.useGoogleSignIn');
+            } else {
+              errorMessage = t('validation.invalidCredentials');
+            }
+          } catch {
+            errorMessage = t('validation.invalidCredentials');
+          }
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = t('validation.tooManyAttempts');
           break;
         case 'auth/network-request-failed':
           errorMessage = t('validation.networkError');
           break;
-        default:
-          break;
       }
+
       Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    if (googleLoading || loading) return;
+    setGoogleLoading(true);
+
+    try {
+      const result = await signInWithGoogle();
+
+      if (!result.success && result.error !== 'cancelled') {
+        if (__DEV__) {
+          console.error('[SignIn] Google error:', result.error);
+        }
+        Alert.alert(t('common.error'), t('validation.googleAuthError'));
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[SignIn] Google exception:', error);
+      }
+      Alert.alert(t('common.error'), t('validation.googleAuthError'));
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -218,12 +291,10 @@ const SignIn = () => {
 
   return (
     <AuthScreenWrapper>
-      {/* Logo */}
       <View style={styles.logoContainer}>
         <AnimatedLogo size="large" showTagline={true} />
       </View>
 
-      {/* Form Card */}
       <Animated.View
         style={[
           styles.formCard,
@@ -241,7 +312,7 @@ const SignIn = () => {
           value={identifier}
           onChangeText={handleIdentifierChange}
           icon="mail"
-          keyboardType="email-address"
+          keyboardType="default"
           autoCapitalize="none"
           autoCorrect={false}
           error={errors.identifier}
@@ -282,7 +353,6 @@ const SignIn = () => {
         />
       </Animated.View>
 
-      {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>{t('auth.noAccount')}</Text>
         <TouchableOpacity

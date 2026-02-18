@@ -9,6 +9,7 @@ import { PasswordInput } from '../components/PasswordInput';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { normalizeUsername, isUsernameTaken } from '../services/usernameService';
 
 // Edit Profile screen - allows users to update their information
 const EditProfile = () => {
@@ -20,6 +21,7 @@ const EditProfile = () => {
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [originalUsername, setOriginalUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,45 +46,54 @@ const EditProfile = () => {
             setName(data.name || '');
             setLastName(data.lastName || '');
             setUsername(data.username || '');
+            setOriginalUsername(data.username || '');
           }
         })
         .catch(error => {
-          // Failed to fetch user data
+          if (__DEV__) {
+            console.error('[EditProfile] Failed to fetch user data:', error);
+          }
         });
     }
   }, []);
 
   // Update profile information
   const handleUpdateProfile = async () => {
-    if (!name.trim() || !lastName.trim() || !username.trim()) {
+    const newUsernameNormalized = normalizeUsername(username);
+    const currentUsernameNormalized = normalizeUsername(originalUsername);
+
+    if (!name.trim() || !lastName.trim() || !newUsernameNormalized) {
       Alert.alert(t('validation.required'), t('validation.fillAllFields'));
       return;
     }
 
     setLoading(true);
     try {
-      // Check if username is taken by another user
-      const usersRef = firestore().collection('users');
-      const usernameQuery = await usersRef
-        .where('username', '==', username)
-        .limit(1)
-        .get();
-
-      if (!usernameQuery.empty && usernameQuery.docs[0].id !== uid) {
-        Alert.alert(t('validation.required'), t('validation.usernameTaken'));
-        setLoading(false);
-        return;
+      // Check if username is taken by another user (only if changed)
+      if (newUsernameNormalized !== currentUsernameNormalized) {
+        const taken = await isUsernameTaken(newUsernameNormalized);
+        if (taken) {
+          Alert.alert(t('validation.required'), t('validation.usernameTaken'));
+          setLoading(false);
+          return;
+        }
       }
 
-      // Update Firestore
+      // Update user document in Firestore
       await firestore().collection('users').doc(uid).update({
-        name,
-        lastName,
-        username,
+        name: name.trim(),
+        lastName: lastName.trim(),
+        username: newUsernameNormalized,
       });
+
+      setOriginalUsername(newUsernameNormalized);
+      setUsername(newUsernameNormalized);
 
       Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'));
     } catch (error) {
+      if (__DEV__) {
+        console.error('[EditProfile] Update error:', error);
+      }
       Alert.alert(t('editProfile.errorTitle'), t('editProfile.usernameError'));
     } finally {
       setLoading(false);
@@ -181,6 +192,7 @@ const EditProfile = () => {
     setLoading(true);
     try {
       const user = auth().currentUser;
+      const usernameKey = normalizeUsername(originalUsername || username);
 
       // Delete user items from Firestore
       const itemsSnapshot = await firestore()
@@ -192,10 +204,15 @@ const EditProfile = () => {
       itemsSnapshot.docs.forEach(doc => {
         batch.delete(doc.ref);
       });
-      await batch.commit();
-
       // Delete user document
-      await firestore().collection('users').doc(uid).delete();
+      batch.delete(firestore().collection('users').doc(uid));
+
+      // Delete username index
+      if (usernameKey) {
+        batch.delete(getUsernameDocRef(usernameKey));
+      }
+
+      await batch.commit();
 
       // Delete Firebase Auth account
       await user.delete();
@@ -215,77 +232,77 @@ const EditProfile = () => {
   };
 
   const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  section: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  expandIcon: {
-    fontSize: 24,
-    color: colors.textSecondary,
-    fontWeight: '300',
-  },
-  nameRow: {
-    flexDirection: 'row',
-  },
-  nameGap: {
-    width: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  disabledInput: {
-    backgroundColor: colors.border + '40',
-    color: colors.textMuted,
-  },
-  hint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: -12,
-    marginBottom: 16,
-  },
-  saveButton: {
-    marginTop: 8,
-  },
-  dangerSection: {
-    borderColor: colors.error + '40',
-  },
-  dangerText: {
-    color: colors.error,
-  },
-  dangerWarning: {
-    fontSize: 14,
-    color: colors.error,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  deleteButton: {
-    backgroundColor: colors.error,
-    borderColor: colors.error,
-  },
-});
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 40,
+    },
+    section: {
+      marginBottom: 24,
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    expandIcon: {
+      fontSize: 24,
+      color: colors.textSecondary,
+      fontWeight: '300',
+    },
+    nameRow: {
+      flexDirection: 'row',
+    },
+    nameGap: {
+      width: 12,
+    },
+    halfInput: {
+      flex: 1,
+    },
+    disabledInput: {
+      backgroundColor: colors.border + '40',
+      color: colors.textMuted,
+    },
+    hint: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: -12,
+      marginBottom: 16,
+    },
+    saveButton: {
+      marginTop: 8,
+    },
+    dangerSection: {
+      borderColor: colors.error + '40',
+    },
+    dangerText: {
+      color: colors.error,
+    },
+    dangerWarning: {
+      fontSize: 14,
+      color: colors.error,
+      marginBottom: 16,
+      lineHeight: 20,
+    },
+    deleteButton: {
+      backgroundColor: colors.error,
+      borderColor: colors.error,
+    },
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -313,7 +330,7 @@ const EditProfile = () => {
           <TextInput
             label={t('editProfile.username')}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) => setUsername(text.toLowerCase())}
             autoCapitalize="none"
           />
 
@@ -407,6 +424,5 @@ const EditProfile = () => {
     </SafeAreaView>
   );
 };
-
 
 export default EditProfile;

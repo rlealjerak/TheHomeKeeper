@@ -33,6 +33,7 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+thehomekeeper-release.keystore
 .kotlin/
 
 # node.js

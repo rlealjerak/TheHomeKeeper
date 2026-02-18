@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator, Platform } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -11,7 +11,7 @@ export const SocialButton = ({ provider, onPress, loading, disabled, title }) =>
     switch (provider) {
       case 'google':
         return {
-          icon: 'google',
+          iconSource: require('../../assets/icons/google.png'),
           iconColor: '#DB4437',
           backgroundColor: colors.surface,
           textColor: colors.text,
@@ -63,6 +63,11 @@ export const SocialButton = ({ provider, onPress, loading, disabled, title }) =>
       justifyContent: 'center',
       marginRight: 12,
     },
+    iconImage: {
+      width: 20,
+      height: 20,
+      resizeMode: 'contain',
+    },
     text: {
       fontSize: 16,
       fontWeight: '600',
@@ -85,11 +90,15 @@ export const SocialButton = ({ provider, onPress, loading, disabled, title }) =>
       ) : (
         <>
           <View style={styles.iconContainer}>
-            <Icon
-              name={config.icon}
-              size={20}
-              color={provider === 'apple' ? config.textColor : config.iconColor}
-            />
+            {config.iconSource ? (
+              <Image source={config.iconSource} style={styles.iconImage} />
+            ) : (
+              <Icon
+                name={config.icon}
+                size={20}
+                color={provider === 'apple' ? config.textColor : config.iconColor}
+              />
+            )}
           </View>
           <Text style={styles.text}>{title}</Text>
         </>

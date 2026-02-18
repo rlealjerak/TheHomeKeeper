@@ -62,6 +62,7 @@
     "enterLastName": "Please enter your last name.",
     "chooseUsername": "Please choose a username.",
     "enterEmail": "Please enter your email.",
+    "enterEmailOrUsername": "Please enter your email or username.",
     "enterPassword": "Please enter your password.",
     "createPasswordRequired": "Please create a password.",
     "invalidEmail": "Please enter a valid email address.",
@@ -70,6 +71,9 @@
     "emailInUse": "That email address is already in use!",
     "invalidCredentials": "Invalid email or password. Please try again.",
     "usernameNotFound": "Username not found. Please check and try again.",
+    "wrongPassword": "Incorrect password. Please try again.",
+    "userDisabled": "This account has been disabled.",
+    "tooManyAttempts": "Too many failed attempts. Please try again later.",
     "networkError": "Network error. Please check your internet connection.",
     "unknownError": "An unexpected error occurred. Please try again.",
     "validatingEmail": "Validating Email...",
@@ -84,6 +88,7 @@
     "newPasswordWeak": "New password is too weak.",
     "recentLoginRequired": "Please sign out and sign in again before this action.",
     "googleAuthError": "Failed to sign in with Google. Please try again.",
+    "useGoogleSignIn": "This account uses Google sign-in. Please sign in with Google.",
     "appleAuthError": "Failed to sign in with Apple. Please try again.",
     "authCancelled": "Sign in was cancelled.",
     "appleNotAvailable": "Apple Sign-In is not available on this device.",
@@ -198,7 +203,11 @@
     "logoutError": "An error occurred while logging out. Please try again.",
     "permissionDenied": "Permission Denied",
     "enableNotifications": "Please enable notifications in your device settings to receive maintenance reminders.",
-    "notificationError": "Failed to update notification settings."
+    "notificationError": "Failed to update notification settings.",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "version": "Version"
   },
 
   "editProfile": {

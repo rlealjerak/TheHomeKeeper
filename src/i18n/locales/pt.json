@@ -62,6 +62,7 @@
     "enterLastName": "Por favor, digite seu sobrenome.",
     "chooseUsername": "Por favor, escolha um nome de usuário.",
     "enterEmail": "Por favor, digite seu e-mail.",
+    "enterEmailOrUsername": "Por favor, digite seu e-mail ou usuário.",
     "enterPassword": "Por favor, digite sua senha.",
     "createPasswordRequired": "Por favor, crie uma senha.",
     "invalidEmail": "Por favor, digite um e-mail válido.",
@@ -70,6 +71,9 @@
     "emailInUse": "Este e-mail já está cadastrado!",
     "invalidCredentials": "E-mail ou senha inválidos. Por favor, tente novamente.",
     "usernameNotFound": "Usuário não encontrado. Por favor, verifique e tente novamente.",
+    "wrongPassword": "Senha incorreta. Por favor, tente novamente.",
+    "userDisabled": "Esta conta foi desativada.",
+    "tooManyAttempts": "Muitas tentativas falharam. Por favor, tente novamente mais tarde.",
     "networkError": "Erro de rede. Por favor, verifique sua conexão com a internet.",
     "unknownError": "Ocorreu um erro inesperado. Por favor, tente novamente.",
     "validatingEmail": "Validando E-mail...",
@@ -84,6 +88,7 @@
     "newPasswordWeak": "A nova senha é muito fraca.",
     "recentLoginRequired": "Por favor, saia e entre novamente antes desta ação.",
     "googleAuthError": "Falha ao entrar com o Google. Por favor, tente novamente.",
+    "useGoogleSignIn": "Esta conta usa login com Google. Por favor, entre com Google.",
     "appleAuthError": "Falha ao entrar com a Apple. Por favor, tente novamente.",
     "authCancelled": "O login foi cancelado.",
     "appleNotAvailable": "Login com Apple não está disponível neste dispositivo.",
@@ -198,7 +203,11 @@
     "logoutError": "Ocorreu um erro ao sair. Por favor, tente novamente.",
     "permissionDenied": "Permissão Negada",
     "enableNotifications": "Por favor, ative as notificações nas configurações do seu dispositivo para receber lembretes de manutenção.",
-    "notificationError": "Falha ao atualizar as configurações de notificação."
+    "notificationError": "Falha ao atualizar as configurações de notificação.",
+    "legal": "Legal",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Serviço",
+    "version": "Versão"
   },
 
   "editProfile": {

@@ -4,6 +4,7 @@ import BootSplash from "react-native-bootsplash";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee, { EventType } from '@notifee/react-native';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import ErrorBoundary from './src/components/ErrorBoundary';
 // Initialize i18n - must be imported before any component that uses translations
 import './src/i18n';
 // Initialize Google Sign-In configuration
@@ -40,11 +41,13 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <RootNavigator />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <RootNavigator />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
